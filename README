@@ -1,2 +1,2 @@
-This repository contains AndroIM an simple Android Instant Messaging application based on WebSocket and Treegger protobuf data (available under BSD License).
-Feel free to develop your own application using any code provided here. 
+This repository contains AndroIM a simple Android Instant Messaging application based on WebSocket and Treegger protobuf protocol (available under BSD License).
+Feel free to develop your own application using the code provided here. 
