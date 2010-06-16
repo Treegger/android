@@ -12,7 +12,7 @@
     android:text="@string/form_name"
     />
     
-<EditText android:id="@+id/entry" 
+<EditText android:id="@+id/input_name" 
 	android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
   	android:background="@android:drawable/editbox_background"
@@ -25,7 +25,7 @@
         android:text="@string/form_socialnetwork"
     />
 <Spinner 
-        android:id="@+id/spinner"
+        android:id="@+id/input_socialnetwork"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:prompt="@string/form_socialnetwork"
@@ -37,7 +37,7 @@
     android:text="@string/form_password"
     />
 
-<EditText android:id="@+id/entry" 
+<EditText android:id="@+id/input_password" 
 	android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
   	android:background="@android:drawable/editbox_background"
@@ -49,13 +49,26 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
 
-<Button android:id="@+id/add" 
-            android:layout_width="wrap_content" 
+<LinearLayout
+    android:orientation="horizontal"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_centerHorizontal="true"
+    android:layout_alignParentBottom="true"
+    centerHorizontal="true"
+    >
+
+<Button android:id="@+id/button_cancel" 
+            android:layout_width="100px" 
             android:layout_height="wrap_content" 
-            android:layout_centerHorizontal="true"
-            android:layout_alignParentBottom="true"
-            centerHorizontal="true"
-            android:text="Add account" />
+            android:text="@string/form_cancel" />
+
+<Button android:id="@+id/button_add" 
+            android:layout_width="100px" 
+            android:layout_height="wrap_content" 
+            android:text="@string/form_add" />
+</LinearLayout>
+
 </RelativeLayout>
 
 </LinearLayout>

@@ -5,6 +5,8 @@
     <string name="form_name">Name</string>
     <string name="form_socialnetwork">Social Network</string>
     <string name="form_password">Password</string>
+    <string name="form_cancel">Cancel</string>
+    <string name="form_add">Add</string>
     
     <string name="menu_accounts">Accounts</string>
     <string name="menu_sign_out">Sign out</string>
