@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+
+<TextView android:id="@+id/label"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+    android:text="@string/form_name"
+    />
+    
+<EditText android:id="@+id/entry" 
+	android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+  	android:background="@android:drawable/editbox_background"
+	/>
+
+<TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dip"
+        android:text="@string/form_socialnetwork"
+    />
+<Spinner 
+        android:id="@+id/spinner"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:prompt="@string/form_socialnetwork"
+    />
+                  
+<TextView android:id="@+id/label"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+    android:text="@string/form_password"
+    />
+
+<EditText android:id="@+id/entry" 
+	android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+  	android:background="@android:drawable/editbox_background"
+  	android:password="true"
+	/>
+
+
+<RelativeLayout
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+<Button android:id="@+id/add" 
+            android:layout_width="wrap_content" 
+            android:layout_height="wrap_content" 
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            centerHorizontal="true"
+            android:text="Add account" />
+</RelativeLayout>
+
+</LinearLayout>

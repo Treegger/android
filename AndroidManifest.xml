@@ -14,6 +14,7 @@
         
         <activity android:name="Accounts" android:label="@string/menu_accounts"></activity> 
         
+        <activity android:name="AccountForm" android:label="@string/menu_accounts"></activity> 
 
     </application>
 

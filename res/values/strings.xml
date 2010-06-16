@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, AndroIM!</string>
     <string name="app_name">AndroIM</string>
+
+    <string name="form_name">Name</string>
+    <string name="form_socialnetwork">Social Network</string>
+    <string name="form_password">Password</string>
     
     <string name="menu_accounts">Accounts</string>
     <string name="menu_sign_out">Sign out</string>
