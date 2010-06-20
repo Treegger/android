@@ -34,7 +34,7 @@ public class AndroIM extends Activity {
         switch (item.getItemId()) {
         case MENU_ACCOUNTS:
             Log.v(TAG, "Starting activity");
-            Intent i = new Intent( this, Accounts.class);
+            Intent i = new Intent( this, AccountList.class);
             startActivity( i );
             return true;
         case MENU_SIGNOUT:
