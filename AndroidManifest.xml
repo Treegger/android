@@ -12,11 +12,11 @@
             </intent-filter>
         </activity>
         
-        <activity android:name="Accounts" android:label="@string/menu_accounts"></activity> 
+        <activity android:name="AccountList" android:label="@string/menu_accounts"></activity> 
         
         <activity android:name="AccountForm" android:label="@string/menu_accounts"></activity> 
 
     </application>
 
-
+	<uses-sdk android:minSdkVersion="3" />
 </manifest> 
