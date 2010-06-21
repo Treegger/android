@@ -1,6 +1,5 @@
 package com.treegger.android.im;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -81,5 +80,12 @@ public class AccountManager
         {
             Log.v( TAG, e.getMessage(), e );
         }
+    }
+
+    public void removeAccount( int position )
+    {
+        if( position >= 0 && position < accounts.size() )
+            accounts.remove( position );
+        commit();
     }
 }
