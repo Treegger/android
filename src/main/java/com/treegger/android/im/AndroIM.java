@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 public class AndroIM extends Activity {
     public static final String TAG = "AndroIM";
@@ -16,6 +18,13 @@ public class AndroIM extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        
+        ListView rosterListView = (ListView)findViewById( R.id.roster_list );
+        
+        final String[] rosterNames = { "dude@TWITTER", "bill@TWITTER", "dude@TWITTER", "bill@TWITTER", "dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" };
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, R.layout.accountsline, rosterNames );
+        rosterListView.setAdapter( adapter );        
+
     }
     
 

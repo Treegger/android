@@ -5,10 +5,22 @@
     android:layout_height="fill_parent"
     >
     
-<TextView  
+<TextView android:id="@+id/status_bar" 
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:text="AndroIM"
+    android:padding="10dp"
+    android:textSize="16sp"
     />
-    
+
+<ListView android:id="@+id/roster_list" 
+    android:layout_width="fill_parent" 
+    android:layout_height="fill_parent"
+    android:padding="10dp"
+    android:textSize="16sp" 
+/>
+
+
+
+
 </LinearLayout>
