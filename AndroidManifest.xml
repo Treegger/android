@@ -17,6 +17,7 @@
         <activity android:name="AccountForm" android:label="@string/menu_accounts"></activity> 
 
     </application>
-
+	
+	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-sdk android:minSdkVersion="3" />
 </manifest> 
