@@ -12,10 +12,11 @@
             </intent-filter>
         </activity>
         
-        <activity android:name="AccountList" android:label="@string/menu_accounts"></activity> 
+        <activity android:name="AccountList" ></activity> 
         
-        <activity android:name="AccountForm" android:label="@string/menu_accounts"></activity> 
+        <activity android:name="AccountForm" ></activity> 
 
+		<service android:name=".remote.TreeggerService" />
     </application>
 	
 	<uses-permission android:name="android.permission.INTERNET" />

@@ -8,7 +8,6 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
@@ -18,13 +17,13 @@ public class AccountManager
 
     private final static String FILENAME = "TreegerAccountManager";
 
-    private Activity activity;
+    private Context context;
 
     private List<Account> accounts;
 
-    public AccountManager( Activity activity )
+    public AccountManager( Context context )
     {
-        this.activity = activity;
+        this.context = context;
         load();
     }
 
@@ -50,7 +49,7 @@ public class AccountManager
     {
         try
         {
-            FileInputStream fis = activity.openFileInput( FILENAME );
+            FileInputStream fis = context.openFileInput( FILENAME );
             ObjectInputStream in = new ObjectInputStream( fis );
             accounts = (List<Account>) in.readObject();
             in.close();
@@ -70,7 +69,7 @@ public class AccountManager
     {
         try
         {
-            FileOutputStream fos = activity.openFileOutput( FILENAME, Context.MODE_PRIVATE );
+            FileOutputStream fos = context.openFileOutput( FILENAME, Context.MODE_PRIVATE );
             ObjectOutputStream out = new ObjectOutputStream( fos );
             out.writeObject( accounts );
             out.close();
