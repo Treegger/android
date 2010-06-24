@@ -19,6 +19,7 @@ import com.treegger.android.im.AccountManager;
 import com.treegger.protobuf.WebSocketProto.AuthenticateRequest;
 import com.treegger.protobuf.WebSocketProto.AuthenticateResponse;
 import com.treegger.protobuf.WebSocketProto.BindRequest;
+import com.treegger.protobuf.WebSocketProto.BindResponse;
 import com.treegger.protobuf.WebSocketProto.Ping;
 import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 import com.treegger.websocket.WSConnector;
@@ -212,6 +213,16 @@ public class TreeggerService
                     
                     Timer timer = new Timer();
                     timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+                }
+                else if( data.hasBindResponse() )
+                {
+                    BindResponse authenticateResponse = data.getBindResponse();
+                    sessionId = authenticateResponse.getSessionId();
+                    if( sessionId != null && sessionId.length() == 0 )
+                    {
+                        sessionId = null;
+                        wsConnector.close();
+                    }
                 }
                 else
                 {
