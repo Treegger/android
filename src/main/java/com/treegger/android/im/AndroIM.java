@@ -1,10 +1,5 @@
 package com.treegger.android.im;
 
-import com.treegger.android.im.remote.TreeggerService;
-import com.treegger.protobuf.WebSocketProto.Roster;
-import com.treegger.protobuf.WebSocketProto.RosterItem;
-import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
-
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -19,7 +14,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
+
+import com.treegger.android.im.remote.TreeggerService;
+import com.treegger.protobuf.WebSocketProto.Roster;
+import com.treegger.protobuf.WebSocketProto.RosterItem;
+import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 
 public class AndroIM extends Activity {
     public static final String TAG = "AndroIM";

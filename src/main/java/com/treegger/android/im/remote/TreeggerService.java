@@ -2,7 +2,10 @@ package com.treegger.android.im.remote;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.app.Service;
 import android.content.Intent;
@@ -14,6 +17,9 @@ import android.widget.Toast;
 import com.treegger.android.im.Account;
 import com.treegger.android.im.AccountManager;
 import com.treegger.protobuf.WebSocketProto.AuthenticateRequest;
+import com.treegger.protobuf.WebSocketProto.AuthenticateResponse;
+import com.treegger.protobuf.WebSocketProto.BindRequest;
+import com.treegger.protobuf.WebSocketProto.Ping;
 import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 import com.treegger.websocket.WSConnector;
 import com.treegger.websocket.WSConnector.WSEventHandler;
@@ -51,14 +57,11 @@ public class TreeggerService
     {
         super.onCreate();
 
-        WSConnector wsConnector = new WSConnector();
-        try
+        AccountManager accountManager = new AccountManager( this );
+        List<Account> accountList = accountManager.getAccounts();
+        for( Account account : accountList )
         {
-            wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", new WSHandler( this, wsConnector ) );
-        }
-        catch ( IOException e )
-        {
-            Log.v(TAG, "Connection failed");
+            new WebSocketManager( this, account );
         }
     }
 
@@ -73,47 +76,127 @@ public class TreeggerService
 
 
 
-    public static class WSHandler implements WSEventHandler
+    public static class WebSocketManager implements WSEventHandler
     {
         public static final String TAG = "WSHandler";
+        
+        public static final long PING_DELAY = 30*1000;
 
+        private Integer pingId = 0;
+        
+        private String sessionId;
+        
         private TreeggerService treeggerService;
         private WSConnector wsConnector;
-        public WSHandler( TreeggerService treeggerService, WSConnector wsConnector )
+        private Account account;
+        
+        private AtomicBoolean connecting = new AtomicBoolean( false );
+        
+        public WebSocketManager( TreeggerService treeggerService, Account account )
         {
             this.treeggerService = treeggerService;
-            this.wsConnector = wsConnector;
-        }
-        @Override
-        public void onOpen()
-        {
-            Toast toast = Toast.makeText(treeggerService, "Connected", Toast.LENGTH_LONG );
-            toast.show();
+            this.account = account;
             
-            AccountManager accountManager = new AccountManager( treeggerService );
-            List<Account> accountList = accountManager.getAccounts();
-            for( Account account : accountList )
-            {
-                WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
-                AuthenticateRequest.Builder authReq = AuthenticateRequest.newBuilder();
-                authReq.setUsername( account.name.trim().toLowerCase()+"@"+ account.socialnetwork.trim().toLowerCase() );
-                authReq.setPassword( account.password.trim() );
-                authReq.setResource( "AndroIM" );
+            this.wsConnector = new WSConnector();
+            connect();
+        }
 
-                message.setAuthenticateRequest( authReq );
-                
+        private void connect()
+        {
+            if( !connecting.getAndSet( true ) )
+            {
                 try
                 {
-                    wsConnector.send( message.build().toByteArray() );
+                    wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", this );
                 }
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
+                    Log.v(TAG, "Connection failed");
                 }
-
+                
             }
-
         }
+        
+        private void authenticate( final String name, final String socialnetwork, final String password )
+        {
+            WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+            AuthenticateRequest.Builder authReq = AuthenticateRequest.newBuilder();
+            authReq.setUsername( name.trim().toLowerCase()+"@"+ socialnetwork.trim().toLowerCase() );
+            authReq.setPassword( password.trim() );
+            authReq.setResource( "AndroIM" );
+            message.setAuthenticateRequest( authReq );
+            sendMessage( message );
+        }
+        
+        private void bind()
+        {
+            if( sessionId != null )
+            {
+                WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+                BindRequest.Builder bindRequest = BindRequest.newBuilder();
+                bindRequest.setSessionId( sessionId );
+                message.setBindRequest( bindRequest );
+                sendMessage( message );
+            }
+            
+        }
+        
+        private void sendMessage( final WebSocketMessage.Builder message )
+        {
+            try
+            {
+                if( wsConnector.isConnected() )
+                {
+                    wsConnector.send( message.build().toByteArray() );
+                }
+                else
+                {
+                    connect();
+                }
+            }
+            catch ( IOException e )
+            {
+                Log.w( TAG, e.getMessage(), e );
+            }
+        }
+
+        public class PingTask extends TimerTask 
+        {
+            public void run() 
+            {
+                if( sessionId != null )
+                {
+                    WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+                    Ping.Builder ping = Ping.newBuilder();
+                    ping.setId( pingId.toString() );
+                    pingId++;
+                    sendMessage( message );
+                }
+            }
+        }
+
+        
+        
+        
+        
+        
+        @Override
+        public void onOpen()
+        {
+            connecting.set( false );
+            Toast toast = Toast.makeText( treeggerService, "Connected", Toast.LENGTH_LONG );
+            toast.show();
+            
+            if( sessionId == null )
+            {
+                authenticate( account.name, account.socialnetwork, account.password );
+            }
+            else
+            {
+                bind();
+            }
+        }
+        
         
         @Override
         public void onMessage( byte[] message )
@@ -121,8 +204,20 @@ public class TreeggerService
             try
             {
                 WebSocketMessage data = WebSocketMessage.newBuilder().mergeFrom( message ).build();
-                treeggerService.messagesQueue.add( data );
-                treeggerService.sendBroadcast( new Intent( BROADCAST_ACTION ) );
+                
+                if( data.hasAuthenticateResponse() )
+                {
+                    AuthenticateResponse authenticateResponse = data.getAuthenticateResponse();
+                    sessionId = authenticateResponse.getSessionId();
+                    
+                    Timer timer = new Timer();
+                    timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+                }
+                else
+                {
+                    treeggerService.messagesQueue.add( data );
+                    treeggerService.sendBroadcast( new Intent( BROADCAST_ACTION ) );
+                }
             }
             catch ( Exception e )
             {
@@ -134,6 +229,7 @@ public class TreeggerService
         public void onMessage( String message )
         {
         }
+
         
         @Override
         public void onError( Exception e )
@@ -143,7 +239,10 @@ public class TreeggerService
         @Override
         public void onClose()
         {
+            connect();
         }
+        
+
     }
 
 }
