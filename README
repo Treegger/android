@@ -1,2 +1,7 @@
 This repository contains AndroIM a simple Android Instant Messaging application based on WebSocket and Treegger protobuf protocol (available under BSD License).
+
+You need to add following libs to your project:
+* websocket-client: http://github.com/Treegger/websocket-client/tree/master/java/
+* protobuf-java: http://repo2.maven.org/maven2/com/google/protobuf/protobuf-java/2.3.0/protobuf-java-2.3.0.jar
+
 Feel free to develop your own application using the code provided here. 
