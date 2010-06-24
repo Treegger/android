@@ -1,19 +1,77 @@
 package com.treegger.android.im;
 
 import com.treegger.android.im.remote.TreeggerService;
+import com.treegger.protobuf.WebSocketProto.Roster;
+import com.treegger.protobuf.WebSocketProto.RosterItem;
+import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 public class AndroIM extends Activity {
     public static final String TAG = "AndroIM";
 
+    private TreeggerService treeggerService = null;
+
+    private ServiceConnection onService = new ServiceConnection()
+    {
+        public void onServiceConnected( ComponentName className, IBinder rawBinder )
+        {
+            treeggerService = ( (TreeggerService.LocalBinder) rawBinder ).getService();
+        }
+
+        public void onServiceDisconnected( ComponentName className )
+        {
+            treeggerService = null;
+        }
+    };
+    
+    private BroadcastReceiver receiver = new BroadcastReceiver()
+    {
+        public void onReceive( Context context, Intent intent )
+        {
+            while( ! treeggerService.messagesQueue.isEmpty() )
+            {
+                WebSocketMessage message = treeggerService.messagesQueue.poll();
+                
+                if( message.hasRoster() )
+                {
+                    updateRoster( message.getRoster() );
+                }
+                
+            }
+        }
+    };
+    
+    
+    
+    private void updateRoster( Roster roster )
+    {
+        final String[] rosterNames = new String[roster.getItemCount()];
+        int i = 0;
+        for( RosterItem rosterItem : roster.getItemList() )
+        {
+            rosterNames[i++] = rosterItem.getName();
+        }
+        
+        ListView rosterListView = (ListView)findViewById( R.id.roster_list );
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, R.layout.accountsline, rosterNames );
+        rosterListView.setAdapter( adapter );        
+        
+    }
     
     /** Called when the activity is first created. */
     @Override
@@ -21,17 +79,33 @@ public class AndroIM extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        startService(  new Intent( this, TreeggerService.class) );
+        //startService(  new Intent( this, TreeggerService.class) );
+        bindService(new Intent( this, TreeggerService.class ), onService, BIND_AUTO_CREATE );
         
-        ListView rosterListView = (ListView)findViewById( R.id.roster_list );
-        
-        final String[] rosterNames = { "dude@TWITTER", "bill@TWITTER", "dude@TWITTER", "bill@TWITTER", "dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" ,"dude@TWITTER", "bill@TWITTER" };
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, R.layout.accountsline, rosterNames );
-        rosterListView.setAdapter( adapter );        
 
     }
     
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        registerReceiver( receiver, new IntentFilter( TreeggerService.BROADCAST_ACTION ) );
+    }
 
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        unregisterReceiver( receiver );
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        super.onDestroy();
+
+        unbindService( onService );
+    }
     
     private static final int MENU_ACCOUNTS = 1;
     private static final int MENU_SIGNOUT = 2;
