@@ -1,14 +1,10 @@
 package com.treegger.android.im.activity;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,29 +12,15 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.treegger.android.im.R;
-import com.treegger.android.im.service.TreeggerService;
 import com.treegger.android.im.service.WebSocketManager;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 
-public class AndroIM extends Activity {
+public class AndroIM extends TreeggerActivity 
+{
     public static final String TAG = "AndroIM";
 
-    private TreeggerService treeggerService = null;
-
-    private ServiceConnection onService = new ServiceConnection()
-    {
-        public void onServiceConnected( ComponentName className, IBinder rawBinder )
-        {
-            treeggerService = ( (TreeggerService.LocalBinder) rawBinder ).getService();
-        }
-
-        public void onServiceDisconnected( ComponentName className )
-        {
-            treeggerService = null;
-        }
-    };
     
     private BroadcastReceiver receiver = new BroadcastReceiver()
     {
@@ -74,16 +56,10 @@ public class AndroIM extends Activity {
         
     }
     
-    /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        
-        //startService(  new Intent( this, TreeggerService.class) );
-        bindService(new Intent( this, TreeggerService.class ), onService, BIND_AUTO_CREATE );
-        
-
     }
     
     @Override
@@ -104,8 +80,6 @@ public class AndroIM extends Activity {
     public void onDestroy()
     {
         super.onDestroy();
-
-        unbindService( onService );
     }
     
     private static final int MENU_ACCOUNTS = 1;

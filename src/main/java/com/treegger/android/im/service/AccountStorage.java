@@ -22,7 +22,7 @@ public class AccountStorage
 
     private List<Account> accounts;
 
-    public AccountStorage( Context context )
+    protected AccountStorage( Context context )
     {
         this.context = context;
         load();
@@ -88,4 +88,10 @@ public class AccountStorage
             accounts.remove( position );
         commit();
     }
+    public void removeAccount( Account account )
+    {
+        accounts.remove( account );
+        commit();
+    }
+
 }

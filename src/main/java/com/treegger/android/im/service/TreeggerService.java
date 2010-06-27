@@ -18,7 +18,7 @@ public class TreeggerService
     
     
     private final Binder binder = new LocalBinder();
-    
+    private AccountStorage accountStorage;
    
 
     public ConcurrentLinkedQueue<WebSocketMessage> messagesQueue = new ConcurrentLinkedQueue<WebSocketMessage>(); 
@@ -42,10 +42,8 @@ public class TreeggerService
     public void onCreate()
     {
         super.onCreate();
-
-        AccountStorage accountManager = new AccountStorage( this );
-        List<Account> accountList = accountManager.getAccounts();
-        for( Account account : accountList )
+        accountStorage = new AccountStorage( this );
+        for( Account account : getAccounts() )
         {
             new WebSocketManager( this, account );
         }
@@ -59,5 +57,18 @@ public class TreeggerService
     }
 
  
-
+    public void addAccount( Account account )
+    {
+        accountStorage.addAccount( account );
+    }
+    
+    public void removeAccount( Account account )
+    {
+        accountStorage.removeAccount( account );
+    }
+    
+    public List<Account> getAccounts()
+    {
+        return accountStorage.getAccounts();
+    }
 }

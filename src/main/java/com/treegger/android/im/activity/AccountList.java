@@ -2,7 +2,6 @@ package com.treegger.android.im.activity;
 
 import java.util.List;
 
-import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,9 +18,8 @@ import android.widget.AdapterView.OnItemClickListener;
 
 import com.treegger.android.im.R;
 import com.treegger.android.im.service.Account;
-import com.treegger.android.im.service.AccountStorage;
 
-public class AccountList extends ListActivity {
+public class AccountList extends TreeggerActivity {
     
     public static final String TAG = "AccountList";
 
@@ -33,17 +31,20 @@ public class AccountList extends ListActivity {
         Log.v(TAG, "Activity State: onCreate()");
 
         super.onCreate(savedInstanceState);
-        
+        setContentView(R.layout.accountslist);
+
     }
 
     @Override
     public void onResume() {
         Log.v(TAG, "Activity State: onResume()");
         super.onResume();
-        updateListAdatpter();
+
         final Intent intent =  new Intent( this, AccountForm.class ) ;
         
-        ListView lv = getListView();
+        final ListView lv = updateListView();
+
+        
         lv.setOnItemClickListener(new OnItemClickListener()
         {
           @Override
@@ -61,7 +62,7 @@ public class AccountList extends ListActivity {
             {
                 AdapterContextMenuInfo adapterMenuInfo = (AdapterContextMenuInfo)menuInfo;
                 
-                if( adapterMenuInfo.position != getListAdapter().getCount() -1 )
+                if( adapterMenuInfo.position != lv.getAdapter().getCount() -1 )
                 {
                     menu.add( 0, CONTEXT_MENU_DELETE_ACCOUNT, 0, "Delete Account");
                     menu.add( 0, CONTEXT_MENU_CANCEL, 0, "Cancel");                    
@@ -71,18 +72,28 @@ public class AccountList extends ListActivity {
 
     }
 
-    
-    private void updateListAdatpter()
+    @Override
+    protected void onTreeggerService()
     {
-        final String[] accountNames = getAccounts();
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, R.layout.accountsline, accountNames );
-        setListAdapter( adapter );        
+        super.onTreeggerService();
+        updateListView();
+    }
+    
+    private ListView updateListView()
+    {
+        ListView lv = (ListView)findViewById( R.id.accounts_list );
+        if( treeggerService != null )
+        {
+            final String[] accountNames = getAccounts();
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, R.layout.accountsline, accountNames );
+            lv.setAdapter( adapter );
+        }
+        return lv;
     }
     
     private String[] getAccounts()
     {
-        AccountStorage accountManager = new AccountStorage( this );
-        List<Account> accountList = accountManager.getAccounts();
+        List<Account> accountList = treeggerService.getAccounts();
         final int size = accountList.size()+1;
         final String[] accountsArray = new String[size];
         int i = 0;
@@ -104,9 +115,8 @@ public class AccountList extends ListActivity {
         switch (menuItem.getItemId()) 
         {
             case CONTEXT_MENU_DELETE_ACCOUNT:
-                AccountStorage accountManager = new AccountStorage( this );
-                accountManager.removeAccount( menuInfo.position );
-                updateListAdatpter();
+                treeggerService.removeAccount( treeggerService.getAccounts().get(menuInfo.position ) );
+                updateListView();
                 return true;
         }
         return false;
