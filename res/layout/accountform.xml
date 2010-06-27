@@ -59,12 +59,12 @@
     >
 
 <Button android:id="@+id/button_cancel" 
-            android:layout_width="100px" 
+            android:layout_width="100dp" 
             android:layout_height="wrap_content" 
             android:text="@string/form_cancel" />
 
 <Button android:id="@+id/button_add" 
-            android:layout_width="100px" 
+            android:layout_width="100dp" 
             android:layout_height="wrap_content" 
             android:text="@string/form_add" />
 </LinearLayout>

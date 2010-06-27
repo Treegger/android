@@ -8,8 +8,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -74,8 +76,20 @@ public class TreeggerService
     }
 
  
-
-
+    public static class DisplayToastRunnable implements Runnable
+    {
+        private Context context;
+        private String message;
+        public DisplayToastRunnable( Context context, String message )
+        {
+            this.context = context;
+            this.message = message;
+        }
+        public void run() 
+        {
+            Toast.makeText( context, message, Toast.LENGTH_SHORT ).show();
+        }
+    }
 
     public static class WebSocketManager implements WSEventHandler
     {
@@ -91,12 +105,16 @@ public class TreeggerService
         private WSConnector wsConnector;
         private Account account;
         
+        private Handler handler;
+        
         private AtomicBoolean connecting = new AtomicBoolean( false );
         
         public WebSocketManager( TreeggerService treeggerService, Account account )
         {
             this.treeggerService = treeggerService;
             this.account = account;
+            
+            this.handler = new Handler();
             
             this.wsConnector = new WSConnector();
             connect();
@@ -185,15 +203,15 @@ public class TreeggerService
         public void onOpen()
         {
             connecting.set( false );
-            Toast toast = Toast.makeText( treeggerService, "Connected", Toast.LENGTH_LONG );
-            toast.show();
             
             if( sessionId == null )
             {
+                handler.post( new DisplayToastRunnable( treeggerService, "Authenticating" ) );
                 authenticate( account.name, account.socialnetwork, account.password );
             }
             else
             {
+                handler.post( new DisplayToastRunnable( treeggerService, "Reconnecting" ) );
                 bind();
             }
         }
@@ -210,6 +228,8 @@ public class TreeggerService
                 {
                     AuthenticateResponse authenticateResponse = data.getAuthenticateResponse();
                     sessionId = authenticateResponse.getSessionId();
+
+                    handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
                     
                     Timer timer = new Timer();
                     timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
@@ -222,6 +242,10 @@ public class TreeggerService
                     {
                         sessionId = null;
                         wsConnector.close();
+                    }
+                    else
+                    {
+                        handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
                     }
                 }
                 else
@@ -245,11 +269,13 @@ public class TreeggerService
         @Override
         public void onError( Exception e )
         {
+            handler.post( new DisplayToastRunnable( treeggerService, "Error: " + e.getMessage() ) );
         }
         
         @Override
         public void onClose()
         {
+            handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
             connect();
         }
         
