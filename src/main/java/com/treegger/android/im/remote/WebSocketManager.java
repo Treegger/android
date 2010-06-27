@@ -10,7 +10,6 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.treegger.android.im.Account;
-import com.treegger.android.im.remote.TreeggerService.DisplayToastRunnable;
 import com.treegger.protobuf.WebSocketProto.AuthenticateRequest;
 import com.treegger.protobuf.WebSocketProto.AuthenticateResponse;
 import com.treegger.protobuf.WebSocketProto.BindRequest;

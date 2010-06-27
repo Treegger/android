@@ -62,19 +62,5 @@ public class TreeggerService
     }
 
  
-    public static class DisplayToastRunnable implements Runnable
-    {
-        private Context context;
-        private String message;
-        public DisplayToastRunnable( Context context, String message )
-        {
-            this.context = context;
-            this.message = message;
-        }
-        public void run() 
-        {
-            Toast.makeText( context, message, Toast.LENGTH_SHORT ).show();
-        }
-    }
 
 }
