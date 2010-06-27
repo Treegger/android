@@ -1,4 +1,4 @@
-package com.treegger.android.im;
+package com.treegger.android.im.service;
 
 import java.io.Serializable;
 

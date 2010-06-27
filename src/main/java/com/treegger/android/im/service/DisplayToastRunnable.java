@@ -1,4 +1,4 @@
-package com.treegger.android.im.remote;
+package com.treegger.android.im.service;
 
 import android.content.Context;
 import android.widget.Toast;

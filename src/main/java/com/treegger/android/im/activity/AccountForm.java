@@ -1,4 +1,4 @@
-package com.treegger.android.im;
+package com.treegger.android.im.activity;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -8,6 +8,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+
+import com.treegger.android.im.R;
+import com.treegger.android.im.service.Account;
+import com.treegger.android.im.service.AccountStorage;
 
 public class AccountForm extends Activity {
     
@@ -21,7 +25,7 @@ public class AccountForm extends Activity {
        super.onCreate(savedInstanceState);
        setContentView(R.layout.accountform );
 
-       final AccountManager accountManager = new AccountManager(this);
+       final AccountStorage accountManager = new AccountStorage(this);
               
        int accountPosition = getIntent().getIntExtra( "accountPosition", -1 );
        Account account = accountManager.getAccount( accountPosition );

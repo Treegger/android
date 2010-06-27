@@ -1,4 +1,4 @@
-package com.treegger.android.im;
+package com.treegger.android.im.service;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -8,10 +8,11 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+
 import android.content.Context;
 import android.util.Log;
 
-public class AccountManager
+public class AccountStorage
 {
     public static final String TAG = "AccountManager";
 
@@ -21,7 +22,7 @@ public class AccountManager
 
     private List<Account> accounts;
 
-    public AccountManager( Context context )
+    public AccountStorage( Context context )
     {
         this.context = context;
         load();

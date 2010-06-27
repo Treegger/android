@@ -1,4 +1,4 @@
-package com.treegger.android.im;
+package com.treegger.android.im.activity;
 
 import java.util.List;
 
@@ -9,13 +9,17 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.View.OnCreateContextMenuListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
-import android.view.ContextMenu.ContextMenuInfo;
-import android.view.View.OnCreateContextMenuListener;
+
+import com.treegger.android.im.R;
+import com.treegger.android.im.service.Account;
+import com.treegger.android.im.service.AccountStorage;
 
 public class AccountList extends ListActivity {
     
@@ -77,7 +81,7 @@ public class AccountList extends ListActivity {
     
     private String[] getAccounts()
     {
-        AccountManager accountManager = new AccountManager( this );
+        AccountStorage accountManager = new AccountStorage( this );
         List<Account> accountList = accountManager.getAccounts();
         final int size = accountList.size()+1;
         final String[] accountsArray = new String[size];
@@ -100,7 +104,7 @@ public class AccountList extends ListActivity {
         switch (menuItem.getItemId()) 
         {
             case CONTEXT_MENU_DELETE_ACCOUNT:
-                AccountManager accountManager = new AccountManager( this );
+                AccountStorage accountManager = new AccountStorage( this );
                 accountManager.removeAccount( menuInfo.position );
                 updateListAdatpter();
                 return true;

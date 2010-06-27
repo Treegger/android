@@ -1,4 +1,4 @@
-package com.treegger.android.im.remote;
+package com.treegger.android.im.service;
 
 import java.io.IOException;
 import java.util.Timer;
@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
 
-import com.treegger.android.im.Account;
 import com.treegger.protobuf.WebSocketProto.AuthenticateRequest;
 import com.treegger.protobuf.WebSocketProto.AuthenticateResponse;
 import com.treegger.protobuf.WebSocketProto.BindRequest;

@@ -1,4 +1,4 @@
-package com.treegger.android.im;
+package com.treegger.android.im.activity;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -15,8 +15,9 @@ import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import com.treegger.android.im.remote.TreeggerService;
-import com.treegger.android.im.remote.WebSocketManager;
+import com.treegger.android.im.R;
+import com.treegger.android.im.service.TreeggerService;
+import com.treegger.android.im.service.WebSocketManager;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 import com.treegger.protobuf.WebSocketProto.WebSocketMessage;

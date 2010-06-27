@@ -1,17 +1,14 @@
-package com.treegger.android.im.remote;
+package com.treegger.android.im.service;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.widget.Toast;
 
-import com.treegger.android.im.Account;
-import com.treegger.android.im.AccountManager;
 import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 
 public class TreeggerService
@@ -46,7 +43,7 @@ public class TreeggerService
     {
         super.onCreate();
 
-        AccountManager accountManager = new AccountManager( this );
+        AccountStorage accountManager = new AccountStorage( this );
         List<Account> accountList = accountManager.getAccounts();
         for( Account account : accountList )
         {
