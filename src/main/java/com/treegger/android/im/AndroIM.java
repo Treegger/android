@@ -16,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.treegger.android.im.remote.TreeggerService;
+import com.treegger.android.im.remote.WebSocketManager;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
@@ -88,7 +89,7 @@ public class AndroIM extends Activity {
     public void onResume()
     {
         super.onResume();
-        registerReceiver( receiver, new IntentFilter( TreeggerService.BROADCAST_ACTION ) );
+        registerReceiver( receiver, new IntentFilter( WebSocketManager.BROADCAST_ACTION ) );
     }
 
     @Override
