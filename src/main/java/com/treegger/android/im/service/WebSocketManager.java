@@ -221,7 +221,7 @@ public class WebSocketManager implements WSEventHandler
     class PingTask extends TimerTask 
     {
         private int inactiveCount = 0;
-        private final static long INACTIVITY_DELAY = 20*1000;
+        private final static long INACTIVITY_DELAY = 5*60*1000;
         
         public void run() 
         {
