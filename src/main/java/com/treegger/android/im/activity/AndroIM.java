@@ -167,6 +167,7 @@ public class AndroIM
     public void onDestroy()
     {
         super.onDestroy();
+        treeggerService.sendPresence( "unavailable", "", "" );
     }
 
     private static final int MENU_ACCOUNTS = 1;
