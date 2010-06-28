@@ -3,8 +3,10 @@ package com.treegger.android.im.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import android.app.Service;
 import android.content.Intent;
@@ -25,6 +27,8 @@ public class TreeggerService
 
     public static final String BROADCAST_ACTION = "TreeggerServiceBroadcast";
     public static final String MESSAGE_TYPE_EXTRA = "messageType";
+    
+    
     public static final int     MESSAGE_TYPE_ROSTER_UPDATE = 1;
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
@@ -54,33 +58,49 @@ public class TreeggerService
         broadcast( MESSAGE_TYPE_ROSTER_UPDATE );
     }
     
-    
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
-    private Map<String,List<String>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<String>>() );
-    
-    public List<String> getTextMessageList( String jid )
+    private String getUserAndHostFromJID( final String jid )
     {
-        return textMessageMap.get( jid );
+        int i = jid.indexOf( '/' );
+        if( i > 0 ) return jid.substring( 0, i );
+        return jid;
     }
     
-    public void addTextMessage( String jid, String message )
+    
+    private Map<String,List<String>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<String>>() );
+    private List<String> unconsumedMessageFroms = Collections.synchronizedList( new ArrayList<String>() ); 
+    
+    public List<String> getTextMessageList( String from )
     {
-        List<String> messagesList = textMessageMap.get( jid );
+        return textMessageMap.get( from );
+    }
+    
+    public boolean hasMessageFrom( String from )
+    {
+        return unconsumedMessageFroms.contains( from );
+    }
+    public void markHasReadMessageFrom( String from )
+    {
+        unconsumedMessageFroms.remove( from );
+    }
+    
+    private void addTextMessage( String from, String message )
+    {
+        List<String> messagesList = textMessageMap.get( from );
         if( messagesList == null )
         {
             messagesList = new ArrayList<String>();
-            textMessageMap.put( jid, messagesList );
+            textMessageMap.put( from, messagesList );
         }
         messagesList.add( message );
+        unconsumedMessageFroms.add( from );
         broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
 
     }
     public void addTextMessage( Account account, TextMessage textMessage )
     {
-        String from = textMessage.getFromUser();
-        int i = from.indexOf( '/' );
-        if( i > 0 ) from = from.substring( 0, i );
+        String from = getUserAndHostFromJID( textMessage.getFromUser() );
         RosterItem rosterItem = findRosterItemByJID( from );
         if( rosterItem != null ) addTextMessage( from, rosterItem.getName()+": " + textMessage.getBody() );
     }
@@ -92,10 +112,8 @@ public class TreeggerService
     
     public void addPresence( Account account, Presence presence )
     {
-        String from = presence.getFrom();
-        int i = from.indexOf( '/' );
-        if( i > 0 ) from = from.substring( 0, i );
-
+        String from = getUserAndHostFromJID( presence.getFrom() );
+        
         String presenceType = presence.getType();
         if( presenceType != null && presenceType.equalsIgnoreCase( "unavailable" ) ) presenceMap.remove( from );
         else presenceMap.put( from, presence );

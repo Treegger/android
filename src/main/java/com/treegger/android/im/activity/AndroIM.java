@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -40,20 +41,17 @@ public class AndroIM
         public void onReceive( Context context, Intent intent )
         {
             int messageType = intent.getIntExtra( TreeggerService.MESSAGE_TYPE_EXTRA, -1 );
-            if ( messageType == TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE )
+            
+            switch( messageType )
             {
-                updateRosters();
-            }
-            else if ( messageType == TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE )
-            {
-                // should notify
-            }
-            else if ( messageType == TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE )
-            {
-                updateRosters();
+                case TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE :
+                case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
+                case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
+                    updateRosters();
             }
 
         }
+
     };
 
     private void updateRosters()
@@ -214,20 +212,30 @@ public class AndroIM
             RosterItem rosterItem = getItem( position );
             String text = rosterItem.getName();
             label.setText( text );
-
-            switch( getPresenceType( rosterItem ) )
+            if( treeggerService.hasMessageFrom( rosterItem.getJid() ) )
             {
-                case PRESENCE_TYPE_AVAILABLE:
-                    row.setBackgroundColor( 0x449DE371 );
-                    break;
-                case PRESENCE_TYPE_AWAY:
-                    row.setBackgroundColor( 0x44F7DB25 );
-                    break;
-                case PRESENCE_TYPE_DND:
-                    row.setBackgroundColor( 0x44F76B25 );
-                    break;
-                case PRESENCE_TYPE_UNAVAILABLE:
+                label.setTypeface( Typeface.DEFAULT_BOLD );
+                row.setBackgroundColor( 0x440F24BF );
             }
+            else
+            {
+                label.setTypeface( Typeface.DEFAULT );
+                switch( getPresenceType( rosterItem ) )
+                {
+                    case PRESENCE_TYPE_AVAILABLE:
+                        row.setBackgroundColor( 0x449DE371 );
+                        break;
+                    case PRESENCE_TYPE_AWAY:
+                        row.setBackgroundColor( 0x44F7DB25 );
+                        break;
+                    case PRESENCE_TYPE_DND:
+                        row.setBackgroundColor( 0x44F76B25 );
+                        break;
+                    case PRESENCE_TYPE_UNAVAILABLE:
+                }
+            }
+                
+
 
             //ImageView icon=(ImageView)row.findViewById(R.id.icon);
             return row;

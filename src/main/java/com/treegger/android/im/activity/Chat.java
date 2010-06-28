@@ -102,6 +102,7 @@ public class Chat
     {
         ListView chatList = (ListView) findViewById( R.id.chat_list );
         List<String> textMessages = treeggerService.getTextMessageList( jid );
+        treeggerService.markHasReadMessageFrom( jid );
         if( textMessages != null )
         {
             chatMessageAdapter = new ArrayAdapter<String>( this, R.layout.chatmessage, textMessages );
