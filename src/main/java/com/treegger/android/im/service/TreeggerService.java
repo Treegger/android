@@ -1,5 +1,6 @@
 package com.treegger.android.im.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +13,8 @@ import android.os.IBinder;
 import android.widget.Toast;
 
 import com.treegger.protobuf.WebSocketProto.Roster;
+import com.treegger.protobuf.WebSocketProto.RosterItem;
+import com.treegger.protobuf.WebSocketProto.TextMessage;
 
 public class TreeggerService
     extends Service
@@ -22,6 +25,7 @@ public class TreeggerService
     public static final String BROADCAST_ACTION = "TreeggerServiceBroadcast";
     public static final String MESSAGE_TYPE_EXTRA = "messageType";
     public static final int     MESSAGE_TYPE_ROSTER_UPDATE = 1;
+    public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
    
     private final Binder binder = new LocalBinder();
     private AccountStorage accountStorage;
@@ -46,6 +50,34 @@ public class TreeggerService
     }
     
     
+    private Map<String,List<String>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<String>>() );
+    
+    public List<String> getTextMessageList( String jid )
+    {
+        return textMessageMap.get( jid );
+    }
+    
+    public void addTextMessage( String jid, String message )
+    {
+        List<String> messagesList = textMessageMap.get( jid );
+        if( messagesList == null )
+        {
+            messagesList = new ArrayList<String>();
+            textMessageMap.put( jid, messagesList );
+        }
+        messagesList.add( message );
+        broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
+
+    }
+    public void addTextMessage( Account account, TextMessage textMessage )
+    {
+        String from = textMessage.getFromUser();
+        int i = from.indexOf( '/' );
+        if( i > 0 ) from = from.substring( 0, i );
+        RosterItem rosterItem = getRosterItemByJID( from );
+        if( rosterItem != null ) addTextMessage( from, rosterItem.getName()+": " + textMessage.getBody() );
+    }
+
     
     final private void broadcast( final int type )
     {
@@ -94,11 +126,52 @@ public class TreeggerService
     }
 
  
+    private Account getAccountByJID( String jid )
+    {
+        for( Map.Entry<Account, Roster> entry : getRosters().entrySet() )
+        {
+            for( RosterItem rosterItem : entry.getValue().getItemList() )
+            {
+                if( rosterItem.getJid().equals( jid ) )
+                {
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
+    }
+
+    private RosterItem getRosterItemByJID( String jid )
+    {
+        for( Map.Entry<Account, Roster> entry : getRosters().entrySet() )
+        {
+            for( RosterItem rosterItem : entry.getValue().getItemList() )
+            {
+                if( rosterItem.getJid().equals( jid ) )
+                {
+                    return rosterItem;
+                }
+            }
+        }
+        return null;
+    }
+    
     public void sendPresence( String type, String show, String status )
     {
         for( WebSocketManager webSocketManager : connectionMap.values() )
         {
             webSocketManager.sendPresence( type, show, status );    
+        }
+    }
+    public void sendTextMessage( String jid, String text )
+    {
+        
+        Account account = getAccountByJID( jid );
+        if( account != null )
+        {
+            WebSocketManager webSocketManager = connectionMap.get( account );
+            webSocketManager.sendMessage( jid, text );
+            addTextMessage( jid, "You: "+ text );
         }
     }
     

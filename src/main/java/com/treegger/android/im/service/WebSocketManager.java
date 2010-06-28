@@ -252,6 +252,10 @@ public class WebSocketManager implements WSEventHandler
             {
                 treeggerService.addRoster( account, data.getRoster() );
             }
+            else if( data.hasTextMessage() )
+            {
+                treeggerService.addTextMessage( account, data.getTextMessage() );
+            }
         }
         catch ( Exception e )
         {
