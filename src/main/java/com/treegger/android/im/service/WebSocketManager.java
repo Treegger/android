@@ -1,8 +1,10 @@
 package com.treegger.android.im.service;
 
 import java.io.IOException;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import android.os.Handler;
@@ -35,6 +37,7 @@ public class WebSocketManager implements WSEventHandler
     
     private Handler handler;
     private Timer timer;
+    private long lastActivity = 0;
     
     public static final String DEFAULT_RESOURCE = "AndroIM";
     
@@ -44,6 +47,8 @@ public class WebSocketManager implements WSEventHandler
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
     private static final int STATE_DESTROYING = 3;
+    private static final int STATE_INACTIVE = 4;
+    
     
     private AtomicInteger connectionState = new AtomicInteger(STATE_DISCONNECTED);
     
@@ -54,37 +59,54 @@ public class WebSocketManager implements WSEventHandler
         
         this.handler = new Handler();
 
-        this.timer = new Timer();
-        
-        
         this.wsConnector = new WSConnector();
         connect();
     }
 
-    private void connect()
+    private synchronized void connect()
     {
-        if( connectionState.getAndSet( STATE_CONNECTING ) == STATE_DISCONNECTED )
+        switch( connectionState.get() )
         {
-            try
-            {
-               if( wsConnector != null ) wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", this );
-            }
-            catch ( IOException e )
-            {
-                Log.v(TAG, "Connection failed");
-            }
-            
+            case STATE_DISCONNECTED:
+            case STATE_INACTIVE:
+                connectionState.set( STATE_CONNECTING );
+                lastActivity = System.currentTimeMillis();
+
+                try
+                {
+                   if( wsConnector != null ) wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", this );
+                }
+                catch ( IOException e )
+                {
+                    Log.v(TAG, "Connection failed");
+                }
+            break;
         }
     }
+    public void deactivate()
+    {
+        try
+        {
+            sendPresence( "", "away", "" );
+            handler.post( new DisplayToastRunnable( treeggerService, "Deactivate " + account.name + "@"+account.socialnetwork ) );
+            connectionState.set( STATE_INACTIVE );
+            if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
+        }
+        catch ( IOException e )
+        {
+            Log.v(TAG, "Deactivate failed");
+        }
+    }
+    
     public void disconnect()
     {
         try
         {
             connectionState.set( STATE_DESTROYING );
-            timer.cancel();
+            if( timer != null ) timer.cancel();
             treeggerService.removeRoster( account );
 
-            if( wsConnector != null && wsConnector.isConnected() ) wsConnector.close();
+            if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
             wsConnector = null;
         }
         catch ( IOException e )
@@ -124,6 +146,8 @@ public class WebSocketManager implements WSEventHandler
 
     public void sendPresence( String type, String show, String status )
     {
+        lastActivity = System.currentTimeMillis();
+
         WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
         Presence.Builder presence = Presence.newBuilder();
         presence.setType( type );
@@ -136,6 +160,8 @@ public class WebSocketManager implements WSEventHandler
 
     public void sendMessage( String to, String text )
     {
+        lastActivity = System.currentTimeMillis();
+
         WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
         TextMessage.Builder textMessage = TextMessage.newBuilder();
         textMessage.setBody( text );
@@ -146,18 +172,41 @@ public class WebSocketManager implements WSEventHandler
     }
 
     
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    private Queue<WebSocketMessage.Builder> laterDeliveryQueue = new ConcurrentLinkedQueue<WebSocketMessage.Builder>();
     
+    private void flushLaterWebSocketMessageQueue()
+    {
+        while( !laterDeliveryQueue.isEmpty() )
+        {
+            WebSocketMessage.Builder message = laterDeliveryQueue.poll();
+            try
+            {
+                wsConnector.send( message.build().toByteArray() );
+            }
+            catch ( IOException e )
+            {
+                Log.w( TAG, e.getMessage(), e );
+            }
+        }
+    }
     
     private void sendWebSocketMessage( final WebSocketMessage.Builder message )
     {
         try
         {
-            if( wsConnector != null && wsConnector.isConnected() )
+            if(!laterDeliveryQueue.isEmpty() && message.hasTextMessage() ) 
+            {
+                laterDeliveryQueue.add( message );
+            }
+            else if( connectionState.get() == STATE_CONNECTED && wsConnector != null && !wsConnector.isClosed()  )
             {
                 wsConnector.send( message.build().toByteArray() );
             }
             else
             {
+                if( message.hasTextMessage() ) laterDeliveryQueue.add( message );
                 connect();
             }
         }
@@ -169,20 +218,41 @@ public class WebSocketManager implements WSEventHandler
 
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
-    public class PingTask extends TimerTask 
+    class PingTask extends TimerTask 
     {
+        private int inactiveCount = 0;
+        private final static long INACTIVITY_DELAY = 20*1000;
+        
         public void run() 
         {
-            if( hasSession() )
+            long now = System.currentTimeMillis();
+            if( lastActivity + INACTIVITY_DELAY < now )
             {
-                WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
-                Ping.Builder ping = Ping.newBuilder();
-                ping.setId( pingId.toString() );
-                pingId++;
-                sendWebSocketMessage( message );
+                inactiveCount ++;
+                if( connectionState.get() == STATE_CONNECTED )
+                {
+                    deactivate();
+                }
+                if( inactiveCount > 5 )
+                {
+                    inactiveCount = 0;
+                    connectionState.set( STATE_DISCONNECTED );
+                    connect();
+                }
+            }
+            else
+            {
+                if( hasSession() )
+                {
+                    WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+                    Ping.Builder ping = Ping.newBuilder();
+                    ping.setId( pingId.toString() );
+                    pingId++;
+                    sendWebSocketMessage( message );
+                }
             }
         }
-    }
+    };
 
     
     
@@ -213,6 +283,14 @@ public class WebSocketManager implements WSEventHandler
         }
     }
     
+    private void postAuthenticationOrBind()
+    {
+        sendPresence( "", "", "" );
+        flushLaterWebSocketMessageQueue();
+        
+        timer = new Timer();
+        timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+    }
     
     @Override
     public void onMessage( byte[] message )
@@ -229,8 +307,7 @@ public class WebSocketManager implements WSEventHandler
                 if( hasSession() )
                 {
                     handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
-                    sendPresence( "", "", "" );
-                    timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+                    postAuthenticationOrBind();
                 }
                 else
                 {
@@ -245,9 +322,7 @@ public class WebSocketManager implements WSEventHandler
                 if( hasSession() )
                 {
                     handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
-                    sendPresence( "", "", "" );
-                    
-                    timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+                    postAuthenticationOrBind();
                 }
                 else
                 {
@@ -260,6 +335,7 @@ public class WebSocketManager implements WSEventHandler
             }
             else if( data.hasTextMessage() )
             {
+                lastActivity = System.currentTimeMillis();
                 treeggerService.addTextMessage( account, data.getTextMessage() );
             }
             else if( data.hasPresence() )
@@ -290,13 +366,21 @@ public class WebSocketManager implements WSEventHandler
     @Override
     public void onClose()
     {
-        if( connectionState.get() != STATE_DESTROYING )
+        switch( connectionState.get() ) 
         {
-            timer.cancel();
-            handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
-            connectionState.set( STATE_DISCONNECTED );
-            // TODO: should reconnect only if service is still running 
-            connect();
+            case STATE_CONNECTED:
+            case STATE_CONNECTING:
+                if( timer != null ) timer.cancel();
+                handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
+                connectionState.set( STATE_DISCONNECTED );
+                // TODO: should reconnect only if service is still running 
+                connect();
+                break;
+            case STATE_DESTROYING:
+            case STATE_INACTIVE:
+            case STATE_DISCONNECTED:
+                break;
+                
         }
     }
     

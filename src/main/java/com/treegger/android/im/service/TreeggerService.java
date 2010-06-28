@@ -87,23 +87,25 @@ public class TreeggerService
     
     private void addTextMessage( String from, String message )
     {
-        List<String> messagesList = textMessageMap.get( from );
-        if( messagesList == null )
+        if( message != null && message.length() > 0 )
         {
-            messagesList = new ArrayList<String>();
-            textMessageMap.put( from, messagesList );
-        }
-        else
-        {
-            if( messagesList.size() > MAX_MESSAGESLIST_SIZE )
+            List<String> messagesList = textMessageMap.get( from );
+            if( messagesList == null )
             {
-                messagesList.remove( 0 );
+                messagesList = new ArrayList<String>();
+                textMessageMap.put( from, messagesList );
             }
+            else
+            {
+                if( messagesList.size() > MAX_MESSAGESLIST_SIZE )
+                {
+                    messagesList.remove( 0 );
+                }
+            }
+            messagesList.add( message );
+            unconsumedMessageFroms.add( from );
+            broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
         }
-        messagesList.add( message );
-        unconsumedMessageFroms.add( from );
-        broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
-
     }
     public void addTextMessage( Account account, TextMessage textMessage )
     {
