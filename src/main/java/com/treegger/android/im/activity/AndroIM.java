@@ -1,5 +1,8 @@
 package com.treegger.android.im.activity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -12,10 +15,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.treegger.android.im.R;
-import com.treegger.android.im.service.WebSocketManager;
+import com.treegger.android.im.service.TreeggerService;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
-import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 
 public class AndroIM extends TreeggerActivity 
 {
@@ -26,34 +28,36 @@ public class AndroIM extends TreeggerActivity
     {
         public void onReceive( Context context, Intent intent )
         {
-            while( ! treeggerService.messagesQueue.isEmpty() )
+            int messageType = intent.getIntExtra( TreeggerService.MESSAGE_TYPE_EXTRA, -1 );
+            if( messageType == TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE )
             {
-                WebSocketMessage message = treeggerService.messagesQueue.poll();
-                
-                if( message.hasRoster() )
-                {
-                    updateRoster( message.getRoster() );
-                }
-                
+                updateRosters();
             }
+            
         }
     };
     
     
     
-    private void updateRoster( Roster roster )
+    private void updateRosters()
     {
-        final String[] rosterNames = new String[roster.getItemCount()];
-        int i = 0;
-        for( RosterItem rosterItem : roster.getItemList() )
+        if( treeggerService != null )
         {
-            rosterNames[i++] = rosterItem.getName();
-        }
-        
-        ListView rosterListView = (ListView)findViewById( R.id.roster_list );
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, R.layout.accountsline, rosterNames );
-        rosterListView.setAdapter( adapter );        
-        
+            List<String> rosterNamesList = new ArrayList<String>();
+            for( Roster roster : treeggerService.getRosters().values() )
+            {
+                for( RosterItem rosterItem : roster.getItemList() )
+                {
+                    rosterNamesList.add( rosterItem.getName() );
+                }
+                
+            }
+            final String[] rosterNames = rosterNamesList.toArray( new String[0] );
+            
+            ListView rosterListView = (ListView)findViewById( R.id.roster_list );
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, R.layout.accountsline, rosterNames );
+            rosterListView.setAdapter( adapter );        
+        }        
     }
     
     @Override
@@ -66,7 +70,8 @@ public class AndroIM extends TreeggerActivity
     public void onResume()
     {
         super.onResume();
-        registerReceiver( receiver, new IntentFilter( WebSocketManager.BROADCAST_ACTION ) );
+        updateRosters();
+        registerReceiver( receiver, new IntentFilter( TreeggerService.BROADCAST_ACTION ) );
     }
 
     @Override

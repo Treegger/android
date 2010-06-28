@@ -1,7 +1,5 @@
 package com.treegger.android.im.activity;
 
-import java.util.List;
-
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;

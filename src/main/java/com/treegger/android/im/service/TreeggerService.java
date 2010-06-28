@@ -1,9 +1,9 @@
 package com.treegger.android.im.service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.app.Service;
 import android.content.Intent;
@@ -11,19 +11,49 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.widget.Toast;
 
-import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
+import com.treegger.protobuf.WebSocketProto.Roster;
 
 public class TreeggerService
     extends Service
 {
     public static final String TAG = "TreeggerService";
     
-    
+
+    public static final String BROADCAST_ACTION = "TreeggerServiceBroadcast";
+    public static final String MESSAGE_TYPE_EXTRA = "messageType";
+    public static final int     MESSAGE_TYPE_ROSTER_UPDATE = 1;
+   
     private final Binder binder = new LocalBinder();
     private AccountStorage accountStorage;
+
     private Map<Account,WebSocketManager> connectionMap = new HashMap<Account, WebSocketManager>();
 
-    public ConcurrentLinkedQueue<WebSocketMessage> messagesQueue = new ConcurrentLinkedQueue<WebSocketMessage>(); 
+    private Map<Account,Roster> rosterMap = Collections.synchronizedMap( new HashMap<Account, Roster>() );
+ 
+    public Map<Account,Roster> getRosters()
+    {
+        return rosterMap;
+    }
+    public void addRoster( Account account, Roster roster )
+    {
+        rosterMap.put( account, roster );
+        broadcast( MESSAGE_TYPE_ROSTER_UPDATE );
+    }
+    public void removeRoster( Account account )
+    {
+        rosterMap.remove( account );
+        broadcast( MESSAGE_TYPE_ROSTER_UPDATE );
+    }
+    
+    
+    
+    final private void broadcast( final int type )
+    {
+        Intent broadCastIntent = new Intent( BROADCAST_ACTION );
+        broadCastIntent.putExtra( MESSAGE_TYPE_EXTRA, type );
+        sendBroadcast( broadCastIntent );
+    }
+    
     
     public class LocalBinder extends Binder {
         public TreeggerService getService() 

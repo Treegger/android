@@ -5,7 +5,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
 
@@ -21,10 +20,7 @@ import com.treegger.websocket.WSConnector.WSEventHandler;
 public class WebSocketManager implements WSEventHandler
 {
     public static final String TAG = "WSHandler";
-    
-    public static final String BROADCAST_ACTION = WebSocketMessage.class.getName();
-
-    
+     
     public static final long PING_DELAY = 30*1000;
 
     private Integer pingId = 0;
@@ -36,6 +32,7 @@ public class WebSocketManager implements WSEventHandler
     private Account account;
     
     private Handler handler;
+    private Timer timer;
     
     private AtomicBoolean connecting = new AtomicBoolean( false );
     
@@ -45,6 +42,9 @@ public class WebSocketManager implements WSEventHandler
         this.account = account;
         
         this.handler = new Handler();
+
+        this.timer = new Timer();
+        
         
         this.wsConnector = new WSConnector();
         connect();
@@ -69,6 +69,9 @@ public class WebSocketManager implements WSEventHandler
     {
         try
         {
+            timer.cancel();
+            treeggerService.removeRoster( account );
+
             if( wsConnector != null && wsConnector.isConnected() ) wsConnector.close();
             wsConnector = null;
         }
@@ -177,7 +180,7 @@ public class WebSocketManager implements WSEventHandler
                 if( hasSession() )
                 {
                     handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
-                    Timer timer = new Timer();
+
                     timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
                 }
                 else
@@ -193,16 +196,17 @@ public class WebSocketManager implements WSEventHandler
                 if( hasSession() )
                 {
                     handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
+
+                    timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
                 }
                 else
                 {
                     if( wsConnector != null ) wsConnector.close();
                 }
             }
-            else
+            else if( data.hasRoster() )
             {
-                treeggerService.messagesQueue.add( data );
-                treeggerService.sendBroadcast( new Intent( BROADCAST_ACTION ) );
+                treeggerService.addRoster( account, data.getRoster() );
             }
         }
         catch ( Exception e )
@@ -210,6 +214,8 @@ public class WebSocketManager implements WSEventHandler
             Log.w( TAG, e.getMessage(), e );
         }
     }
+
+    
     
     @Override
     public void onMessage( String message )
@@ -226,11 +232,13 @@ public class WebSocketManager implements WSEventHandler
     @Override
     public void onClose()
     {
+        timer.cancel();
         handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
         // TODO: should reconnect only if service is still running 
         connect();
     }
     
 
+    
 
 }
