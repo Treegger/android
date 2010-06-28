@@ -13,6 +13,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Spinner;
 
 import com.treegger.android.im.R;
 import com.treegger.android.im.service.TreeggerService;
@@ -64,6 +65,13 @@ public class AndroIM extends TreeggerActivity
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        
+        Spinner presenceSpinner = (Spinner) findViewById( R.id.presence_bar );
+        String[] presenceTypes = getResources().getStringArray(R.array.presenceType );
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, android.R.layout.simple_spinner_item, presenceTypes );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        presenceSpinner.setAdapter( adapter );
+        presenceSpinner.setSelection( 0 );
     }
     
     @Override

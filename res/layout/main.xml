@@ -5,13 +5,13 @@
     android:layout_height="fill_parent"
     >
     
-<TextView android:id="@+id/status_bar" 
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
-    android:text="AndroIM"
-    android:padding="10dp"
-    android:textSize="16sp"
+<Spinner 
+		android:id="@+id/presence_bar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:prompt="@string/presence_bar"
     />
+
 
 <ListView android:id="@+id/roster_list" 
     android:layout_width="fill_parent" 

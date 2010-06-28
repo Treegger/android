@@ -72,8 +72,7 @@ public class AccountForm
         }
 
         Spinner spinner = (Spinner) findViewById( R.id.input_socialnetwork );
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, android.R.layout.simple_spinner_item,
-                                                                 SOCIAL_NETWORKS );
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, android.R.layout.simple_spinner_item, SOCIAL_NETWORKS );
         adapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item );
         spinner.setAdapter( adapter );
 

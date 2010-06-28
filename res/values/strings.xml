@@ -2,13 +2,23 @@
 <resources>
     <string name="app_name">AndroIM</string>
 
+	<string name="presence_bar">Precence status</string>
+    
     <string name="form_name">Name</string>
     <string name="form_socialnetwork">Social Network</string>
     <string name="form_password">Password</string>
+    
+    
     <string name="button_cancel">Cancel</string>
     <string name="button_add">Add</string>
     <string name="button_update">Update</string>
     
     <string name="menu_accounts">Accounts</string>
     <string name="menu_sign_out">Sign out</string>
+    
+    <string-array name="presenceType">
+    	<item>Available</item>
+    	<item>Do no disturb</item>
+    	<item>Away</item>
+    </string-array>
 </resources>
