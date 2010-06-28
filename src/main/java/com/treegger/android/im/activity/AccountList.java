@@ -60,7 +60,7 @@ public class AccountList
             public void onItemClick( AdapterView<?> parent, View view, int position, long id )
             {
                 Account account = (Account)lv.getAdapter().getItem( position );
-                intent.putExtra( "accountId", account.id );
+                intent.putExtra( AccountForm.EXTRA_ACCOUNT_ID, account.id );
                 
                 startActivity( intent );
             }

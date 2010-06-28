@@ -17,6 +17,8 @@ public class AccountForm
 
     public static final String TAG = "AccountForm";
 
+    public static final String EXTRA_ACCOUNT_ID = "accountId";
+
     static final String[] SOCIAL_NETWORKS = new String[] { "Twitter", "Foursquare" };
 
     private Account account = null;
@@ -44,7 +46,7 @@ public class AccountForm
     {
         super.onTreeggerService();
 
-        Long accountId = getIntent().getLongExtra( "accountId", -1 );
+        Long accountId = getIntent().getLongExtra( EXTRA_ACCOUNT_ID, -1 );
 
         if ( accountId >= 0 )
         {
