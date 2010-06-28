@@ -13,8 +13,8 @@
         </activity>
         
         <activity android:name=".activity.AccountList" ></activity> 
-        
         <activity android:name=".activity.AccountForm" ></activity> 
+        <activity android:name=".activity.Chat" ></activity> 
 
 		<service android:name=".service.TreeggerService" />
     </application>

@@ -27,6 +27,7 @@ public class TreeggerService
     public static final String MESSAGE_TYPE_EXTRA = "messageType";
     public static final int     MESSAGE_TYPE_ROSTER_UPDATE = 1;
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
+    public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
    
     private final Binder binder = new LocalBinder();
     private AccountStorage accountStorage;
@@ -87,12 +88,24 @@ public class TreeggerService
 
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
+    private Map<String,Presence> presenceMap = Collections.synchronizedMap( new HashMap<String,Presence>() ); 
+    
     public void addPresence( Account account, Presence presence )
     {
-        // TODO Auto-generated method stub
-        
-    }
+        String from = presence.getFrom();
+        int i = from.indexOf( '/' );
+        if( i > 0 ) from = from.substring( 0, i );
 
+        String presenceType = presence.getType();
+        if( presenceType != null && presenceType.equalsIgnoreCase( "unavailable" ) ) presenceMap.remove( from );
+        else presenceMap.put( from, presence );
+        broadcast( MESSAGE_TYPE_PRESENCE_UPDATE );
+
+    }
+    public Presence getPresence( String jid )
+    {
+        return presenceMap.get( jid );
+    }
     
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
