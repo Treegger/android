@@ -56,7 +56,7 @@ public class WebSocketManager implements WSEventHandler
         {
             try
             {
-                wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", this );
+               if( wsConnector != null ) wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", this );
             }
             catch ( IOException e )
             {
@@ -69,7 +69,8 @@ public class WebSocketManager implements WSEventHandler
     {
         try
         {
-            if( wsConnector.isConnected() ) wsConnector.close();
+            if( wsConnector != null && wsConnector.isConnected() ) wsConnector.close();
+            wsConnector = null;
         }
         catch ( IOException e )
         {
@@ -105,7 +106,7 @@ public class WebSocketManager implements WSEventHandler
     {
         try
         {
-            if( wsConnector.isConnected() )
+            if( wsConnector != null && wsConnector.isConnected() )
             {
                 wsConnector.send( message.build().toByteArray() );
             }
@@ -195,7 +196,7 @@ public class WebSocketManager implements WSEventHandler
                 }
                 else
                 {
-                    wsConnector.close();
+                    if( wsConnector != null ) wsConnector.close();
                 }
             }
             else
