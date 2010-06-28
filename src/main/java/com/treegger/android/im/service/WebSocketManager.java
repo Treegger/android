@@ -167,6 +167,8 @@ public class WebSocketManager implements WSEventHandler
         }
     }
 
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     public class PingTask extends TimerTask 
     {
         public void run() 
@@ -190,6 +192,10 @@ public class WebSocketManager implements WSEventHandler
     }
     
     
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     @Override
     public void onOpen()
     {
@@ -255,6 +261,10 @@ public class WebSocketManager implements WSEventHandler
             else if( data.hasTextMessage() )
             {
                 treeggerService.addTextMessage( account, data.getTextMessage() );
+            }
+            else if( data.hasPresence() )
+            {
+                treeggerService.addPresence( account, data.getPresence() );
             }
         }
         catch ( Exception e )

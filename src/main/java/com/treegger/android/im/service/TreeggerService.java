@@ -12,6 +12,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.widget.Toast;
 
+import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 import com.treegger.protobuf.WebSocketProto.TextMessage;
@@ -32,6 +33,9 @@ public class TreeggerService
 
     private Map<Account,WebSocketManager> connectionMap = new HashMap<Account, WebSocketManager>();
 
+
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     private Map<Account,Roster> rosterMap = Collections.synchronizedMap( new HashMap<Account, Roster>() );
  
     public Map<Account,Roster> getRosters()
@@ -50,6 +54,8 @@ public class TreeggerService
     }
     
     
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     private Map<String,List<String>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<String>>() );
     
     public List<String> getTextMessageList( String jid )
@@ -74,11 +80,22 @@ public class TreeggerService
         String from = textMessage.getFromUser();
         int i = from.indexOf( '/' );
         if( i > 0 ) from = from.substring( 0, i );
-        RosterItem rosterItem = getRosterItemByJID( from );
+        RosterItem rosterItem = findRosterItemByJID( from );
         if( rosterItem != null ) addTextMessage( from, rosterItem.getName()+": " + textMessage.getBody() );
     }
 
+
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    public void addPresence( Account account, Presence presence )
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
     
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     final private void broadcast( final int type )
     {
         Intent broadCastIntent = new Intent( BROADCAST_ACTION );
@@ -86,7 +103,9 @@ public class TreeggerService
         sendBroadcast( broadCastIntent );
     }
     
-    
+
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     public class LocalBinder extends Binder {
         public TreeggerService getService() 
         {
@@ -101,7 +120,8 @@ public class TreeggerService
     
     
     
-    
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     @Override
     public void onCreate()
     {
@@ -126,7 +146,9 @@ public class TreeggerService
     }
 
  
-    private Account getAccountByJID( String jid )
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    private Account findAccountByJID( String jid )
     {
         for( Map.Entry<Account, Roster> entry : getRosters().entrySet() )
         {
@@ -141,7 +163,7 @@ public class TreeggerService
         return null;
     }
 
-    private RosterItem getRosterItemByJID( String jid )
+    private RosterItem findRosterItemByJID( String jid )
     {
         for( Map.Entry<Account, Roster> entry : getRosters().entrySet() )
         {
@@ -156,6 +178,8 @@ public class TreeggerService
         return null;
     }
     
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     public void sendPresence( String type, String show, String status )
     {
         for( WebSocketManager webSocketManager : connectionMap.values() )
@@ -166,7 +190,7 @@ public class TreeggerService
     public void sendTextMessage( String jid, String text )
     {
         
-        Account account = getAccountByJID( jid );
+        Account account = findAccountByJID( jid );
         if( account != null )
         {
             WebSocketManager webSocketManager = connectionMap.get( account );
@@ -176,6 +200,8 @@ public class TreeggerService
     }
     
     
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
     public Account findAccountById( Long id )
     {
         if( id == null ) return null;
