@@ -94,6 +94,15 @@ public class TreeggerService
     }
 
  
+    public void sendPresence( String type, String show, String status )
+    {
+        for( WebSocketManager webSocketManager : connectionMap.values() )
+        {
+            webSocketManager.sendPresence( type, show, status );    
+        }
+    }
+    
+    
     public Account findAccountById( Long id )
     {
         if( id == null ) return null;

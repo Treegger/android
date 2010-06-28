@@ -13,6 +13,8 @@ import com.treegger.protobuf.WebSocketProto.AuthenticateResponse;
 import com.treegger.protobuf.WebSocketProto.BindRequest;
 import com.treegger.protobuf.WebSocketProto.BindResponse;
 import com.treegger.protobuf.WebSocketProto.Ping;
+import com.treegger.protobuf.WebSocketProto.Presence;
+import com.treegger.protobuf.WebSocketProto.TextMessage;
 import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 import com.treegger.websocket.WSConnector;
 import com.treegger.websocket.WSConnector.WSEventHandler;
@@ -34,6 +36,9 @@ public class WebSocketManager implements WSEventHandler
     private Handler handler;
     private Timer timer;
     
+    public static final String DEFAULT_RESOURCE = "AndroIM";
+    
+    private String fromJID;
     
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
@@ -92,12 +97,17 @@ public class WebSocketManager implements WSEventHandler
     {
         WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
         AuthenticateRequest.Builder authReq = AuthenticateRequest.newBuilder();
-        authReq.setUsername( name.trim().toLowerCase()+"@"+ socialnetwork.trim().toLowerCase() );
+        String username = name.trim().toLowerCase()+"@"+ socialnetwork.trim().toLowerCase();
+        this.fromJID = username+"/"+DEFAULT_RESOURCE;
+        authReq.setUsername( username );
         authReq.setPassword( password.trim() );
-        authReq.setResource( "AndroIM" );
+        authReq.setResource( DEFAULT_RESOURCE );
         message.setAuthenticateRequest( authReq );
-        sendMessage( message );
+        sendWebSocketMessage( message );
     }
+    
+    
+    
     
     private void bind()
     {
@@ -107,12 +117,38 @@ public class WebSocketManager implements WSEventHandler
             BindRequest.Builder bindRequest = BindRequest.newBuilder();
             bindRequest.setSessionId( sessionId );
             message.setBindRequest( bindRequest );
-            sendMessage( message );
+            sendWebSocketMessage( message );
         }
         
     }
+
+    public void sendPresence( String type, String show, String status )
+    {
+        WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+        Presence.Builder presence = Presence.newBuilder();
+        presence.setType( type );
+        presence.setShow( show );
+        presence.setStatus( status );
+        presence.setFrom( fromJID );
+        message.setPresence( presence );
+        sendWebSocketMessage( message );        
+    }
+
+    public void sendMessage( String to, String text )
+    {
+        WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+        TextMessage.Builder textMessage = TextMessage.newBuilder();
+        textMessage.setBody( text );
+        textMessage.setToUser( to );
+        textMessage.setFromUser( fromJID );
+        message.setTextMessage( textMessage );
+        sendWebSocketMessage( message );        
+    }
+
     
-    private void sendMessage( final WebSocketMessage.Builder message )
+    
+    
+    private void sendWebSocketMessage( final WebSocketMessage.Builder message )
     {
         try
         {
@@ -141,7 +177,7 @@ public class WebSocketManager implements WSEventHandler
                 Ping.Builder ping = Ping.newBuilder();
                 ping.setId( pingId.toString() );
                 pingId++;
-                sendMessage( message );
+                sendWebSocketMessage( message );
             }
         }
     }
@@ -187,7 +223,7 @@ public class WebSocketManager implements WSEventHandler
                 if( hasSession() )
                 {
                     handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
-
+                    sendPresence( "", "", "" );
                     timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
                 }
                 else
@@ -203,7 +239,8 @@ public class WebSocketManager implements WSEventHandler
                 if( hasSession() )
                 {
                     handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
-
+                    sendPresence( "", "", "" );
+                    
                     timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
                 }
                 else

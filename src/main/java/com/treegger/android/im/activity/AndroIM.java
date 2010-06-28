@@ -11,9 +11,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemSelectedListener;
 
 import com.treegger.android.im.R;
 import com.treegger.android.im.service.TreeggerService;
@@ -71,8 +75,39 @@ public class AndroIM extends TreeggerActivity
         ArrayAdapter<String> adapter = new ArrayAdapter<String>( this, android.R.layout.simple_spinner_item, presenceTypes );
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         presenceSpinner.setAdapter( adapter );
-        presenceSpinner.setSelection( 0 );
+        
+        presenceSpinner.setOnItemSelectedListener(new OnItemSelectedListener()
+        {
+            @Override
+            public void onItemSelected( AdapterView<?> parent, View view, int pos, long id )
+            {
+                if( treeggerService != null ) 
+                {
+                    String type = "";
+                    String show = "";
+                    String status = "";
+                    
+                    String spinnerPresence = parent.getItemAtPosition(pos).toString();
+                    if( spinnerPresence.equalsIgnoreCase( "Do no disturb" ) )
+                    {
+                        show = "dnd";
+                    }
+                    else if( spinnerPresence.equalsIgnoreCase( "Away" ) )
+                    {
+                        show = "away";   
+                    }
+                    treeggerService.sendPresence( type, show, status );
+                }
+            }
+
+            @Override
+            public void onNothingSelected( AdapterView<?> parent )
+            {
+            }
+
+        });
     }
+    
     
     @Override
     public void onResume()
