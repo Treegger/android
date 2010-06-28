@@ -18,6 +18,7 @@ public class AccountStorage
 
     private final static String FILENAME = "TreegerAccountManager";
 
+    private static Long idCounter = System.currentTimeMillis();
     private Context context;
 
     private List<Account> accounts;
@@ -30,7 +31,19 @@ public class AccountStorage
 
     public void addAccount( Account account )
     {
+        account.id = idCounter++;
         accounts.add( account );
+        commit();
+    }
+
+    public void updateAccount( Account account )
+    {
+        commit();
+    }
+
+    public void removeAccount( Account account )
+    {
+        accounts.remove( account );
         commit();
     }
 
@@ -39,11 +52,6 @@ public class AccountStorage
         return accounts;
     }
 
-    public Account getAccount( int position )
-    {
-        if( position >= 0 && position < accounts.size() ) return accounts.get( position );
-        return null;
-    }
     
     @SuppressWarnings("unchecked")
     private void load()
@@ -80,18 +88,6 @@ public class AccountStorage
         {
             Log.v( TAG, e.getMessage(), e );
         }
-    }
-
-    public void removeAccount( int position )
-    {
-        if( position >= 0 && position < accounts.size() )
-            accounts.remove( position );
-        commit();
-    }
-    public void removeAccount( Account account )
-    {
-        accounts.remove( account );
-        commit();
     }
 
 }

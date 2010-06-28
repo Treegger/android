@@ -57,9 +57,23 @@ public class TreeggerService
     }
 
  
+    public Account findAccountById( Long id )
+    {
+        if( id == null ) return null;
+        for( Account account : accountStorage.getAccounts() )
+        {
+            if( id.longValue() == account.id.longValue() ) return account;
+        }
+        return null;
+    }
     public void addAccount( Account account )
     {
         accountStorage.addAccount( account );
+    }
+
+    public void updateAccount( Account account )
+    {
+        accountStorage.updateAccount( account );
     }
     
     public void removeAccount( Account account )
