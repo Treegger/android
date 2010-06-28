@@ -79,7 +79,7 @@ public class WebSocketManager implements WSEventHandler
     
     private void bind()
     {
-        if( sessionId != null )
+        if( hasSession() )
         {
             WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
             BindRequest.Builder bindRequest = BindRequest.newBuilder();
@@ -113,7 +113,7 @@ public class WebSocketManager implements WSEventHandler
     {
         public void run() 
         {
-            if( sessionId != null )
+            if( hasSession() )
             {
                 WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
                 Ping.Builder ping = Ping.newBuilder();
@@ -126,7 +126,10 @@ public class WebSocketManager implements WSEventHandler
 
     
     
-    
+    private final boolean hasSession()
+    {
+        return sessionId != null && sessionId.length()>0;
+    }
     
     
     @Override
@@ -134,7 +137,7 @@ public class WebSocketManager implements WSEventHandler
     {
         connecting.set( false );
         
-        if( sessionId == null )
+        if( !hasSession() )
         {
             handler.post( new DisplayToastRunnable( treeggerService, "Authenticating" ) );
             authenticate( account.name, account.socialnetwork, account.password );
@@ -159,23 +162,29 @@ public class WebSocketManager implements WSEventHandler
                 AuthenticateResponse authenticateResponse = data.getAuthenticateResponse();
                 sessionId = authenticateResponse.getSessionId();
 
-                handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
-                
-                Timer timer = new Timer();
-                timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+                if( hasSession() )
+                {
+                    handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
+                    Timer timer = new Timer();
+                    timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+                }
+                else
+                {
+                    handler.post( new DisplayToastRunnable( treeggerService, "Authentication failure for account: " + account.name + "@"+account.socialnetwork ) );
+                }
+
             }
             else if( data.hasBindResponse() )
             {
                 BindResponse authenticateResponse = data.getBindResponse();
                 sessionId = authenticateResponse.getSessionId();
-                if( sessionId != null && sessionId.length() == 0 )
+                if( hasSession() )
                 {
-                    sessionId = null;
-                    wsConnector.close();
+                    handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
                 }
                 else
                 {
-                    handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
+                    wsConnector.close();
                 }
             }
             else
