@@ -31,7 +31,7 @@ public class TreeggerService
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
    
-    private static final int MAX_MESSAGE_SIZE = 100;
+    private static final int MAX_MESSAGESLIST_SIZE = 100;
     
     private final Binder binder = new LocalBinder();
     private AccountStorage accountStorage;
@@ -95,7 +95,7 @@ public class TreeggerService
         }
         else
         {
-            if( messagesList.size() > MAX_MESSAGE_SIZE )
+            if( messagesList.size() > MAX_MESSAGESLIST_SIZE )
             {
                 messagesList.remove( 0 );
             }
