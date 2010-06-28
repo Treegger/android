@@ -3,10 +3,8 @@ package com.treegger.android.im.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import android.app.Service;
 import android.content.Intent;
@@ -33,6 +31,8 @@ public class TreeggerService
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
    
+    private static final int MAX_MESSAGE_SIZE = 100;
+    
     private final Binder binder = new LocalBinder();
     private AccountStorage accountStorage;
 
@@ -92,6 +92,13 @@ public class TreeggerService
         {
             messagesList = new ArrayList<String>();
             textMessageMap.put( from, messagesList );
+        }
+        else
+        {
+            if( messagesList.size() > MAX_MESSAGE_SIZE )
+            {
+                messagesList.remove( 0 );
+            }
         }
         messagesList.add( message );
         unconsumedMessageFroms.add( from );
