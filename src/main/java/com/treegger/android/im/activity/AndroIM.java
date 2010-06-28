@@ -75,7 +75,7 @@ public class AndroIM
                 {
                     int typeDelta = getPresenceType( item1 ) - getPresenceType( item2 );
                     if( typeDelta == 0 )
-                        return item1.getName().compareTo( item2.getName() );
+                        return item1.getName().toLowerCase().compareTo( item2.getName().toLowerCase() );
                     else return -typeDelta;
                 }
     
