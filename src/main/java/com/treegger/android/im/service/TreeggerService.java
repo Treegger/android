@@ -1,6 +1,8 @@
 package com.treegger.android.im.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.app.Service;
@@ -19,7 +21,7 @@ public class TreeggerService
     
     private final Binder binder = new LocalBinder();
     private AccountStorage accountStorage;
-   
+    private Map<Account,WebSocketManager> connectionMap = new HashMap<Account, WebSocketManager>();
 
     public ConcurrentLinkedQueue<WebSocketMessage> messagesQueue = new ConcurrentLinkedQueue<WebSocketMessage>(); 
     
@@ -45,7 +47,7 @@ public class TreeggerService
         accountStorage = new AccountStorage( this );
         for( Account account : getAccounts() )
         {
-            new WebSocketManager( this, account );
+            connectionMap.put( account, new WebSocketManager( this, account ) );
         }
     }
 
@@ -54,6 +56,11 @@ public class TreeggerService
     public void onDestroy()
     {
         Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
+        for( WebSocketManager webSocketManager : connectionMap.values() )
+        {
+            webSocketManager.disconnect();
+        }
+        connectionMap.clear();
     }
 
  
@@ -69,16 +76,22 @@ public class TreeggerService
     public void addAccount( Account account )
     {
         accountStorage.addAccount( account );
+        connectionMap.put( account, new WebSocketManager( this, account ) );
     }
 
     public void updateAccount( Account account )
     {
         accountStorage.updateAccount( account );
+        WebSocketManager webSocketManager = connectionMap.remove( account );
+        webSocketManager.disconnect();
+        connectionMap.put( account, new WebSocketManager( this, account ) );
     }
     
     public void removeAccount( Account account )
     {
         accountStorage.removeAccount( account );
+        WebSocketManager webSocketManager = connectionMap.remove( account );
+        webSocketManager.disconnect();
     }
     
     public List<Account> getAccounts()

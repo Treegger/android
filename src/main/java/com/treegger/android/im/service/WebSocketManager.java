@@ -65,6 +65,17 @@ public class WebSocketManager implements WSEventHandler
             
         }
     }
+    public void disconnect()
+    {
+        try
+        {
+            if( wsConnector.isConnected() ) wsConnector.close();
+        }
+        catch ( IOException e )
+        {
+            Log.v(TAG, "Disconnection failed");
+        }
+    }
     
     private void authenticate( final String name, final String socialnetwork, final String password )
     {

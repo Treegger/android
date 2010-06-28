@@ -19,6 +19,12 @@ public class Account implements Serializable
         }
         return false;
     }
+    @Override
+    public int hashCode()
+    {
+        if( id != null ) return id.hashCode();
+        else return 0;
+    }
     
     
 }
