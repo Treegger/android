@@ -227,6 +227,7 @@ public class WebSocketManager implements WSEventHandler
     public void onClose()
     {
         handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
+        // TODO: should reconnect only if service is still running 
         connect();
     }
     
