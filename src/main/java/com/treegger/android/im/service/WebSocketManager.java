@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import android.os.Handler;
 import android.util.Log;
@@ -34,7 +35,13 @@ public class WebSocketManager implements WSEventHandler
     private Handler handler;
     private Timer timer;
     
-    private AtomicBoolean connecting = new AtomicBoolean( false );
+    
+    private static final int STATE_DISCONNECTED = 0;
+    private static final int STATE_CONNECTING = 1;
+    private static final int STATE_CONNECTED = 2;
+    private static final int STATE_DESTROYING = 3;
+    
+    private AtomicInteger connectionState = new AtomicInteger(STATE_DISCONNECTED);
     
     public WebSocketManager( TreeggerService treeggerService, Account account )
     {
@@ -52,7 +59,7 @@ public class WebSocketManager implements WSEventHandler
 
     private void connect()
     {
-        if( !connecting.getAndSet( true ) )
+        if( connectionState.getAndSet( STATE_CONNECTING ) == STATE_DISCONNECTED )
         {
             try
             {
@@ -69,6 +76,7 @@ public class WebSocketManager implements WSEventHandler
     {
         try
         {
+            connectionState.set( STATE_DESTROYING );
             timer.cancel();
             treeggerService.removeRoster( account );
 
@@ -150,7 +158,7 @@ public class WebSocketManager implements WSEventHandler
     @Override
     public void onOpen()
     {
-        connecting.set( false );
+        connectionState.set( STATE_CONNECTED );
         
         if( !hasSession() )
         {
@@ -232,10 +240,14 @@ public class WebSocketManager implements WSEventHandler
     @Override
     public void onClose()
     {
-        timer.cancel();
-        handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
-        // TODO: should reconnect only if service is still running 
-        connect();
+        if( connectionState.get() != STATE_DESTROYING )
+        {
+            timer.cancel();
+            handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
+            connectionState.set( STATE_DISCONNECTED );
+            // TODO: should reconnect only if service is still running 
+            connect();
+        }
     }
     
 
