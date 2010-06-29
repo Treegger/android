@@ -95,7 +95,7 @@ public class TreeggerService
     
     private String unXML( String s )
     {
-        return s.replace( "&apos;", "'" ).replace( "&quot;", "\"" );
+        return s.replace( "&apos;", "'" ).replace( "&quot;", "\"" ).replace( "&gt;", ">" ).replace( "&lt;", "<" );
     }
     private void addTextMessage( String from, String message )
     {
