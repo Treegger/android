@@ -85,7 +85,7 @@ public class AccountList
     }
 
     @Override
-    protected void onTreeggerService()
+    public void onTreeggerService()
     {
         super.onTreeggerService();
         updateListView();

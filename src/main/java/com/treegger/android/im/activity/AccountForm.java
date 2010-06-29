@@ -42,7 +42,7 @@ public class AccountForm
     }
 
     @Override
-    protected void onTreeggerService()
+    public void onTreeggerService()
     {
         super.onTreeggerService();
 

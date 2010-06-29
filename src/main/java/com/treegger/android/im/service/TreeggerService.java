@@ -8,13 +8,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.widget.Toast;
 
+import com.treegger.android.im.R;
+import com.treegger.android.im.activity.AndroIM;
 import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
@@ -34,6 +40,9 @@ public class TreeggerService
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
    
+    public static final int     MESSAGE_TYPE_AUTHENTICATING = 4;
+    public static final int     MESSAGE_TYPE_AUTHENTICATING_FINISHED = 5;
+    
     private static final int MAX_MESSAGESLIST_SIZE = 100;
     
     private final Binder binder = new LocalBinder();
@@ -97,7 +106,7 @@ public class TreeggerService
     {
         return s.replace( "&apos;", "'" ).replace( "&quot;", "\"" ).replace( "&gt;", ">" ).replace( "&lt;", "<" );
     }
-    private void addTextMessage( String from, String message )
+    private void addTextMessage( String from, String message, boolean localMessage )
     {
         if( message != null && message.length() > 0 )
         {
@@ -115,7 +124,11 @@ public class TreeggerService
                 }
             }
             messagesList.add( unXML( message ) );
-            unconsumedMessageFroms.add( from );
+            if( !localMessage )
+            {
+                unconsumedMessageFroms.add( from );
+                messageNotification( from, message );
+            }
             broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
         }
     }
@@ -123,7 +136,8 @@ public class TreeggerService
     {
         String from = getUserAndHostFromJID( textMessage.getFromUser() );
         RosterItem rosterItem = findRosterItemByJID( from );
-        if( rosterItem != null ) addTextMessage( from, rosterItem.getName()+": " + textMessage.getBody() );
+        if( rosterItem != null &&  textMessage.hasBody() )
+            addTextMessage( from, rosterItem.getName()+": " + textMessage.getBody(), false );
     }
 
 
@@ -190,6 +204,8 @@ public class TreeggerService
     @Override
     public void onDestroy()
     {
+        sendPresence( "unavailable", "", "" );
+
         Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
         for( WebSocketManager webSocketManager : connectionMap.values() )
         {
@@ -248,7 +264,7 @@ public class TreeggerService
         {
             WebSocketManager webSocketManager = connectionMap.get( account );
             webSocketManager.sendMessage( jid, text );
-            addTextMessage( jid, "You: "+ text );
+            addTextMessage( jid, "You: "+ text, true );
         }
     }
     
@@ -288,5 +304,46 @@ public class TreeggerService
     public List<Account> getAccounts()
     {
         return accountStorage.getAccounts();
+    }
+    
+    
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    public void onAuthenticating()
+    {
+        broadcast( MESSAGE_TYPE_AUTHENTICATING );
+    }
+    public void onAuthenticatingFinished()
+    {
+        broadcast( MESSAGE_TYPE_AUTHENTICATING_FINISHED );
+    }
+    
+    
+    private String visibleChatJID = null;
+    
+    
+    public void setVisibleChat( String jid )
+    {
+        this.visibleChatJID = jid;
+    }
+    
+    
+    private void messageNotification( String from, String message )
+    {
+        if( visibleChatJID == null || !visibleChatJID.equalsIgnoreCase( from ) )
+        {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            int icon = android.R.drawable.stat_notify_chat;
+            
+            CharSequence tickerText = getText(R.string.message_notification);
+            long when = System.currentTimeMillis();
+    
+            Notification notification = new Notification(icon, tickerText, when);
+            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, AndroIM.class), 0 );
+            notification.setLatestEventInfo(this, "AndroIM", message, contentIntent);
+            notification.defaults |= Notification.DEFAULT_SOUND;
+            
+            notificationManager.notify( R.string.message_notification, notification);
+        }        
     }
 }

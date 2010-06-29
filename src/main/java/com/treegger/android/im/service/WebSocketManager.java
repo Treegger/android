@@ -267,14 +267,14 @@ public class WebSocketManager implements WSEventHandler
     {
         connectionState.set( STATE_CONNECTED );
         
+        treeggerService.onAuthenticating();
         if( !hasSession() )
         {
-            treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authenticating" ) );
+            //treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authenticating" ) );
             authenticate( account.name, account.socialnetwork, account.password );
         }
         else
         {
-            treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Reconnecting" ) );
             bind();
         }
     }
@@ -299,10 +299,11 @@ public class WebSocketManager implements WSEventHandler
             {
                 AuthenticateResponse authenticateResponse = data.getAuthenticateResponse();
                 sessionId = authenticateResponse.getSessionId();
+                
+                treeggerService.onAuthenticatingFinished();
 
                 if( hasSession() )
                 {
-                    treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
                     postAuthenticationOrBind();
                 }
                 else
@@ -315,9 +316,11 @@ public class WebSocketManager implements WSEventHandler
             {
                 BindResponse authenticateResponse = data.getBindResponse();
                 sessionId = authenticateResponse.getSessionId();
+                
+                treeggerService.onAuthenticatingFinished();
+
                 if( hasSession() )
                 {
-                    treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
                     postAuthenticationOrBind();
                 }
                 else

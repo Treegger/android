@@ -2,10 +2,6 @@ package com.treegger.android.im.activity;
 
 import java.util.List;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -31,18 +27,14 @@ public class Chat
     private ArrayAdapter<String> chatMessageAdapter;
     
     
-    private BroadcastReceiver receiver = new BroadcastReceiver()
+    @Override
+    public void onMessageType( int messageType )
     {
-        public void onReceive( Context context, Intent intent )
+        if ( messageType == TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE )
         {
-            int messageType = intent.getIntExtra( TreeggerService.MESSAGE_TYPE_EXTRA, -1 );
-            if ( messageType == TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE )
-            {
-                updateChatMessage();
-            }
-
+            updateChatMessage();
         }
-    };
+    }
 
     
     
@@ -50,8 +42,8 @@ public class Chat
     public void onCreate( Bundle savedInstanceState )
     {
         Log.v( TAG, "Activity State: onCreate()" );
-
         super.onCreate( savedInstanceState );
+
         setContentView( R.layout.chat );
 
         jid = getIntent().getStringExtra( EXTRA_ROSTER_JID );
@@ -63,24 +55,22 @@ public class Chat
     {
         Log.v( TAG, "Activity State: onResume()" );
         super.onResume();
-        registerReceiver( receiver, new IntentFilter( TreeggerService.BROADCAST_ACTION ) );
-
+        if( treeggerService != null ) treeggerService.setVisibleChat( jid );
     }
 
     @Override
     public void onPause()
     {
         super.onPause();
-        unregisterReceiver( receiver );
+        if( treeggerService != null ) treeggerService.setVisibleChat( null );        
     }
 
-    
-
     @Override
-    protected void onTreeggerService()
+    public void onTreeggerService()
     {
         super.onTreeggerService();
 
+        treeggerService.setVisibleChat( jid );
         updateChatMessage();
         
         Button button = (Button) findViewById( R.id.button_send );

@@ -5,10 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
@@ -36,23 +34,21 @@ public class AndroIM
 {
     public static final String TAG = "AndroIM";
 
-    private BroadcastReceiver receiver = new BroadcastReceiver()
+    @Override
+    public void onMessageType( int messageType )
     {
-        public void onReceive( Context context, Intent intent )
+        super.onMessageType( messageType );
+        switch( messageType )
         {
-            int messageType = intent.getIntExtra( TreeggerService.MESSAGE_TYPE_EXTRA, -1 );
-            
-            switch( messageType )
-            {
-                case TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE :
-                case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
-                case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
-                    updateRosters();
-            }
-
+            case TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE :
+            case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
+            case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
+                updateRosters();
+                break;
         }
 
-    };
+    }
+
 
     private void updateRosters()
     {
@@ -153,21 +149,18 @@ public class AndroIM
     {
         super.onResume();
         updateRosters();
-        registerReceiver( receiver, new IntentFilter( TreeggerService.BROADCAST_ACTION ) );
     }
 
     @Override
     public void onPause()
     {
         super.onPause();
-        unregisterReceiver( receiver );
     }
 
     @Override
     public void onDestroy()
     {
         super.onDestroy();
-        treeggerService.sendPresence( "unavailable", "", "" );
     }
     
     
@@ -206,6 +199,8 @@ public class AndroIM
         }
         return false;
     }
+    
+    
 
     public class RosterItemAdapter extends ArrayAdapter<RosterItem>
     {
