@@ -3,8 +3,10 @@ package com.treegger.android.im.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import android.app.Service;
 import android.content.Intent;
@@ -69,7 +71,7 @@ public class TreeggerService
     
     
     private Map<String,List<String>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<String>>() );
-    private List<String> unconsumedMessageFroms = Collections.synchronizedList( new ArrayList<String>() ); 
+    private Set<String> unconsumedMessageFroms = Collections.synchronizedSet( new HashSet<String>() ); 
     
     public List<String> getTextMessageList( String from )
     {
