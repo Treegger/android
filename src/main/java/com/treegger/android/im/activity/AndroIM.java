@@ -169,6 +169,17 @@ public class AndroIM
         super.onDestroy();
         treeggerService.sendPresence( "unavailable", "", "" );
     }
+    
+    
+    @Override
+    public void onTreeggerService()
+    {
+        if( treeggerService.getAccounts().size() == 0 )
+        {
+            startActivity( new Intent( this, AccountList.class ) );
+        }
+    }
+    
 
     private static final int MENU_ACCOUNTS = 1;
 
@@ -190,6 +201,7 @@ public class AndroIM
                 startActivity( new Intent( this, AccountList.class ) );
                 return true;
             case MENU_SIGNOUT:
+                finish();
                 return true;
         }
         return false;

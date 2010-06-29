@@ -11,6 +11,7 @@ import java.util.Set;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.widget.Toast;
 
@@ -36,11 +37,16 @@ public class TreeggerService
     private static final int MAX_MESSAGESLIST_SIZE = 100;
     
     private final Binder binder = new LocalBinder();
+    protected Handler handler; 
+    
     private AccountStorage accountStorage;
 
     private Map<Account,WebSocketManager> connectionMap = new HashMap<Account, WebSocketManager>();
 
 
+    
+    
+    
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
     private Map<Account,Roster> rosterMap = Collections.synchronizedMap( new HashMap<Account, Roster>() );
@@ -87,6 +93,10 @@ public class TreeggerService
         unconsumedMessageFroms.remove( from );
     }
     
+    private String unXML( String s )
+    {
+        return s.replace( "&apos;", "'" ).replace( "&quot;", "\"" );
+    }
     private void addTextMessage( String from, String message )
     {
         if( message != null && message.length() > 0 )
@@ -104,7 +114,7 @@ public class TreeggerService
                     messagesList.remove( 0 );
                 }
             }
-            messagesList.add( message );
+            messagesList.add( unXML( message ) );
             unconsumedMessageFroms.add( from );
             broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
         }
@@ -168,6 +178,7 @@ public class TreeggerService
     public void onCreate()
     {
         super.onCreate();
+        handler = new Handler();
         accountStorage = new AccountStorage( this );
         for( Account account : getAccounts() )
         {

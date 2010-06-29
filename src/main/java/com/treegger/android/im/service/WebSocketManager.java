@@ -7,7 +7,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import android.os.Handler;
 import android.util.Log;
 
 import com.treegger.protobuf.WebSocketProto.AuthenticateRequest;
@@ -35,7 +34,6 @@ public class WebSocketManager implements WSEventHandler
     private WSConnector wsConnector;
     private Account account;
     
-    private Handler handler;
     private Timer timer;
     private long lastActivity = 0;
     
@@ -57,8 +55,6 @@ public class WebSocketManager implements WSEventHandler
         this.treeggerService = treeggerService;
         this.account = account;
         
-        this.handler = new Handler();
-
         this.wsConnector = new WSConnector();
         connect();
     }
@@ -88,7 +84,7 @@ public class WebSocketManager implements WSEventHandler
         try
         {
             sendPresence( "", "away", "" );
-            handler.post( new DisplayToastRunnable( treeggerService, "Deactivate " + account.name + "@"+account.socialnetwork ) );
+            treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Deactivate " + account.name + "@"+account.socialnetwork ) );
             connectionState.set( STATE_INACTIVE );
             if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
         }
@@ -273,12 +269,12 @@ public class WebSocketManager implements WSEventHandler
         
         if( !hasSession() )
         {
-            handler.post( new DisplayToastRunnable( treeggerService, "Authenticating" ) );
+            treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authenticating" ) );
             authenticate( account.name, account.socialnetwork, account.password );
         }
         else
         {
-            handler.post( new DisplayToastRunnable( treeggerService, "Reconnecting" ) );
+            treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Reconnecting" ) );
             bind();
         }
     }
@@ -306,12 +302,12 @@ public class WebSocketManager implements WSEventHandler
 
                 if( hasSession() )
                 {
-                    handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
+                    treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authenticated" ) );
                     postAuthenticationOrBind();
                 }
                 else
                 {
-                    handler.post( new DisplayToastRunnable( treeggerService, "Authentication failure for account: " + account.name + "@"+account.socialnetwork ) );
+                    treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authentication failure for account: " + account.name + "@"+account.socialnetwork ) );
                 }
 
             }
@@ -321,7 +317,7 @@ public class WebSocketManager implements WSEventHandler
                 sessionId = authenticateResponse.getSessionId();
                 if( hasSession() )
                 {
-                    handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
+                    treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Reconnected" ) );
                     postAuthenticationOrBind();
                 }
                 else
@@ -360,7 +356,7 @@ public class WebSocketManager implements WSEventHandler
     @Override
     public void onError( Exception e )
     {
-        handler.post( new DisplayToastRunnable( treeggerService, "Error: " + e.getMessage() ) );
+        treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Error: " + e.getMessage() ) );
     }
     
     @Override
@@ -371,7 +367,7 @@ public class WebSocketManager implements WSEventHandler
             case STATE_CONNECTED:
             case STATE_CONNECTING:
                 if( timer != null ) timer.cancel();
-                handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
+                treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
                 connectionState.set( STATE_DISCONNECTED );
                 // TODO: should reconnect only if service is still running 
                 connect();
