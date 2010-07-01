@@ -39,6 +39,7 @@ public class WebSocketManager implements WSEventHandler
     
     public static final String DEFAULT_RESOURCE = "AndroIM";
     
+    public boolean authenticated = false;
     private String fromJID;
     
     private static final int STATE_DISCONNECTED = 0;
@@ -142,29 +143,35 @@ public class WebSocketManager implements WSEventHandler
 
     public void sendPresence( String type, String show, String status )
     {
-        lastActivity = System.currentTimeMillis();
-
-        WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
-        Presence.Builder presence = Presence.newBuilder();
-        presence.setType( type );
-        presence.setShow( show );
-        presence.setStatus( status );
-        presence.setFrom( fromJID );
-        message.setPresence( presence );
-        sendWebSocketMessage( message );        
+        if( authenticated )
+        {
+            lastActivity = System.currentTimeMillis();
+    
+            WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+            Presence.Builder presence = Presence.newBuilder();
+            presence.setType( type );
+            presence.setShow( show );
+            presence.setStatus( status );
+            presence.setFrom( fromJID );
+            message.setPresence( presence );
+            sendWebSocketMessage( message );
+        }
     }
 
     public void sendMessage( String to, String text )
     {
-        lastActivity = System.currentTimeMillis();
-
-        WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
-        TextMessage.Builder textMessage = TextMessage.newBuilder();
-        textMessage.setBody( text );
-        textMessage.setToUser( to );
-        textMessage.setFromUser( fromJID );
-        message.setTextMessage( textMessage );
-        sendWebSocketMessage( message );        
+        if( authenticated )
+        {
+            lastActivity = System.currentTimeMillis();
+    
+            WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+            TextMessage.Builder textMessage = TextMessage.newBuilder();
+            textMessage.setBody( text );
+            textMessage.setToUser( to );
+            textMessage.setFromUser( fromJID );
+            message.setTextMessage( textMessage );
+            sendWebSocketMessage( message );
+        }
     }
 
     
@@ -281,6 +288,7 @@ public class WebSocketManager implements WSEventHandler
     
     private void postAuthenticationOrBind()
     {
+        authenticated = true;
         sendPresence( "", "", "" );
         flushLaterWebSocketMessageQueue();
         
