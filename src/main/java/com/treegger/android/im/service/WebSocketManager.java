@@ -45,7 +45,7 @@ public class WebSocketManager implements WSEventHandler
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
-    private static final int STATE_INACTIVE = 4;
+    private static final int STATE_INACTIVE = 3;
     
     
     private AtomicInteger connectionState = new AtomicInteger(STATE_DISCONNECTED);

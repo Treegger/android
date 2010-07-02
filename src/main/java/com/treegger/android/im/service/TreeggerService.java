@@ -24,7 +24,7 @@ import android.os.IBinder;
 import android.widget.Toast;
 
 import com.treegger.android.im.R;
-import com.treegger.android.im.activity.AndroIM;
+import com.treegger.android.im.activity.Chat;
 import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
@@ -420,7 +420,11 @@ public class TreeggerService
             long when = System.currentTimeMillis();
     
             Notification notification = new Notification(icon, tickerText, when);
-            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, AndroIM.class), 0 );
+            
+            Intent intent = new Intent( this, Chat.class );
+            intent.putExtra( Chat.EXTRA_ROSTER_JID, from );
+
+            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0 );
             notification.setLatestEventInfo(this, "AndroIM", message, contentIntent);
             notification.defaults |= Notification.DEFAULT_SOUND;
             
