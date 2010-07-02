@@ -194,7 +194,7 @@ public class AndroIM
                 startActivity( new Intent( this, AccountList.class ) );
                 return true;
             case MENU_SIGNOUT:
-                //finish();
+                if( treeggerService != null ) treeggerService.sendPresence( "unavailable", "", "" );
                 System.exit( 0 );
                 return true;
         }
