@@ -96,7 +96,8 @@ public class WebSocketManager implements WSEventHandler
     
     public void disconnect()
     {
-        if( connectionState.get() == STATE_INACTIVE ) return;
+        int state = connectionState.get();
+        if( state == STATE_INACTIVE || state == STATE_DISCONNECTED || state == STATE_CONNECTING ) return;
         try
         {
             connectionState.set( STATE_INACTIVE );

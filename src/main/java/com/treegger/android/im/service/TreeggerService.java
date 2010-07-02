@@ -350,6 +350,7 @@ public class TreeggerService
     {
         accountStorage.addAccount( account );
         connectionMap.put( account, new WebSocketManager( this, account ) );
+        connect();
     }
 
     public void updateAccount( Account account )
@@ -358,6 +359,7 @@ public class TreeggerService
         WebSocketManager webSocketManager = connectionMap.remove( account );
         removeRoster( account );
         webSocketManager.disconnect();
+        webSocketManager.connect();
 
         connectionMap.put( account, new WebSocketManager( this, account ) );
     }
