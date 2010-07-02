@@ -194,7 +194,8 @@ public class AndroIM
                 startActivity( new Intent( this, AccountList.class ) );
                 return true;
             case MENU_SIGNOUT:
-                finish();
+                //finish();
+                System.exit( 0 );
                 return true;
         }
         return false;

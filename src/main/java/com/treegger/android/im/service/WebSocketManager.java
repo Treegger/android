@@ -45,7 +45,6 @@ public class WebSocketManager implements WSEventHandler
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
-    private static final int STATE_DESTROYING = 3;
     private static final int STATE_INACTIVE = 4;
     
     
@@ -60,7 +59,7 @@ public class WebSocketManager implements WSEventHandler
         connect();
     }
 
-    private synchronized void connect()
+    public synchronized void connect()
     {
         switch( connectionState.get() )
         {
@@ -68,7 +67,7 @@ public class WebSocketManager implements WSEventHandler
             case STATE_INACTIVE:
                 connectionState.set( STATE_CONNECTING );
                 lastActivity = System.currentTimeMillis();
-
+                treeggerService.onConnecting();
                 try
                 {
                    if( wsConnector != null ) wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", this );
@@ -97,14 +96,14 @@ public class WebSocketManager implements WSEventHandler
     
     public void disconnect()
     {
+        if( connectionState.get() == STATE_INACTIVE ) return;
         try
         {
-            connectionState.set( STATE_DESTROYING );
+            connectionState.set( STATE_INACTIVE );
             if( timer != null ) timer.cancel();
-            treeggerService.removeRoster( account );
 
             if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
-            wsConnector = null;
+            treeggerService.onDisconnected();
         }
         catch ( IOException e )
         {
@@ -273,7 +272,7 @@ public class WebSocketManager implements WSEventHandler
     public void onOpen()
     {
         connectionState.set( STATE_CONNECTED );
-        
+        treeggerService.onConnectingFinished();
         treeggerService.onAuthenticating();
         if( !hasSession() )
         {
@@ -383,7 +382,6 @@ public class WebSocketManager implements WSEventHandler
                 // TODO: should reconnect only if service is still running 
                 connect();
                 break;
-            case STATE_DESTROYING:
             case STATE_INACTIVE:
             case STATE_DISCONNECTED:
                 break;
@@ -392,6 +390,11 @@ public class WebSocketManager implements WSEventHandler
     }
     
 
+    @Override
+    public void onStop()
+    {
+        Log.w( TAG, "Remote connection stopped" );
+    }
     
 
 }

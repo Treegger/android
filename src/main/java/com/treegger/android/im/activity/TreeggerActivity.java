@@ -40,8 +40,11 @@ public abstract class TreeggerActivity extends Activity {
     {
         public void onReceive( Context context, Intent intent )
         {
-            int messageType = intent.getIntExtra( TreeggerService.MESSAGE_TYPE_EXTRA, -1 );
-            onMessageType( messageType );
+            if( TreeggerService.TREEGGER_BROADCAST_ACTION.equals( intent.getAction() ) )
+            {
+                int messageType = intent.getIntExtra( TreeggerService.EXTRA_MESSAGE_TYPE, -1 );
+                onMessageType( messageType );
+            }
         }
     };
     
@@ -49,6 +52,12 @@ public abstract class TreeggerActivity extends Activity {
     {
         switch( messageType )
         {
+            case TreeggerService.MESSAGE_TYPE_CONNECTING:
+                showDialog(TreeggerService.MESSAGE_TYPE_CONNECTING);
+                break;
+            case TreeggerService.MESSAGE_TYPE_CONNECTING_FINISHED:
+                removeDialog( TreeggerService.MESSAGE_TYPE_CONNECTING);
+                break;
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING:
                 showDialog(TreeggerService.MESSAGE_TYPE_AUTHENTICATING);
                 break;
@@ -71,7 +80,7 @@ public abstract class TreeggerActivity extends Activity {
     {
         super.onResume();
          
-        registerReceiver( receiver, new IntentFilter( TreeggerService.BROADCAST_ACTION ) );
+        registerReceiver( receiver, new IntentFilter( TreeggerService.TREEGGER_BROADCAST_ACTION ) );
     }
 
     @Override
@@ -102,20 +111,26 @@ public abstract class TreeggerActivity extends Activity {
 
     
     
-    
+    private ProgressDialog buildDialog( String title, String message )
+    {
+        ProgressDialog dialog = new ProgressDialog(this);
+        dialog.setTitle(title);
+        dialog.setMessage(message);
+        dialog.setIndeterminate(true);
+        dialog.setCancelable(true);
+        return dialog;
+        
+    }
 
     @Override
     protected Dialog onCreateDialog( int dialogType ) 
     {
         switch( dialogType )
         {
+            case TreeggerService.MESSAGE_TYPE_CONNECTING:
+                return buildDialog( "Connecting", "Please wait...");
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING:
-                ProgressDialog dialog = new ProgressDialog(this);
-                dialog.setTitle("Authentication");
-                dialog.setMessage("Please wait...");
-                dialog.setIndeterminate(true);
-                dialog.setCancelable(true);
-                return dialog;        
+                return buildDialog( "Authentication", "Please wait...");
         }
         return null;
     }

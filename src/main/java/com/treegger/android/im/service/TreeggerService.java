@@ -12,8 +12,12 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
@@ -32,16 +36,18 @@ public class TreeggerService
     public static final String TAG = "TreeggerService";
     
 
-    public static final String BROADCAST_ACTION = "TreeggerServiceBroadcast";
-    public static final String MESSAGE_TYPE_EXTRA = "messageType";
+    public static final String TREEGGER_BROADCAST_ACTION = "TreeggerServiceBroadcast";
+    public static final String EXTRA_MESSAGE_TYPE = "messageType";
     
     
     public static final int     MESSAGE_TYPE_ROSTER_UPDATE = 1;
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
    
-    public static final int     MESSAGE_TYPE_AUTHENTICATING = 4;
-    public static final int     MESSAGE_TYPE_AUTHENTICATING_FINISHED = 5;
+    public static final int     MESSAGE_TYPE_CONNECTING = 4;
+    public static final int     MESSAGE_TYPE_CONNECTING_FINISHED = 5;
+    public static final int     MESSAGE_TYPE_AUTHENTICATING = 6;
+    public static final int     MESSAGE_TYPE_AUTHENTICATING_FINISHED = 7;
     
     private static final int MAX_MESSAGESLIST_SIZE = 100;
     
@@ -53,7 +59,50 @@ public class TreeggerService
     private Map<Account,WebSocketManager> connectionMap = new HashMap<Account, WebSocketManager>();
 
 
-    
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    private BroadcastReceiver receiver = new BroadcastReceiver()
+    {
+        private final static int NO_NETWORK = -2; 
+        private final static int UNDEFINED = -1; 
+        private int prevNetworkType = UNDEFINED;
+        public void onReceive( Context context, Intent intent )
+        {
+            if( ConnectivityManager.CONNECTIVITY_ACTION.equals( intent.getAction() ) ) 
+            {
+                boolean noConnectivity = intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false );
+
+                boolean isFailover = intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER, false);
+                NetworkInfo networkInfo = (NetworkInfo)intent.getParcelableExtra( ConnectivityManager.EXTRA_NETWORK_INFO );
+                int networkType = networkInfo.getType();
+                
+                boolean networkChanged = false; 
+                if( networkType != prevNetworkType )
+                {
+                    if( prevNetworkType != UNDEFINED ) networkChanged = true;
+                    prevNetworkType = networkType;
+                }
+                //String reason = intent.getStringExtra(ConnectivityManager.EXTRA_REASON);
+                
+                if( noConnectivity )
+                {
+                    disconnect();
+                    prevNetworkType = NO_NETWORK;
+                } 
+                else 
+                {
+                    if( isFailover || networkChanged )
+                    {
+                        disconnect();
+                        connect();
+                    }
+                }
+                
+                
+
+            }
+        }
+    };
     
     
     // ----------------------------------------------------------------------------
@@ -164,8 +213,8 @@ public class TreeggerService
     // ----------------------------------------------------------------------------
     final private void broadcast( final int type )
     {
-        Intent broadCastIntent = new Intent( BROADCAST_ACTION );
-        broadCastIntent.putExtra( MESSAGE_TYPE_EXTRA, type );
+        Intent broadCastIntent = new Intent( TREEGGER_BROADCAST_ACTION );
+        broadCastIntent.putExtra( EXTRA_MESSAGE_TYPE, type );
         sendBroadcast( broadCastIntent );
     }
     
@@ -192,12 +241,27 @@ public class TreeggerService
     public void onCreate()
     {
         super.onCreate();
+        
+        registerReceiver( receiver, new IntentFilter( ConnectivityManager.CONNECTIVITY_ACTION ) );
+
         handler = new Handler();
         accountStorage = new AccountStorage( this );
+        connect();
+    }
+    private void connect()
+    {
         for( Account account : getAccounts() )
         {
-            connectionMap.put( account, new WebSocketManager( this, account ) );
-        }
+            WebSocketManager webSocketManager = connectionMap.get( account );
+            if( webSocketManager != null  )
+            {
+                webSocketManager.connect();
+            }
+            else
+            {
+                connectionMap.put( account, new WebSocketManager( this, account ) );
+            }
+        }        
     }
 
 
@@ -205,16 +269,18 @@ public class TreeggerService
     public void onDestroy()
     {
         sendPresence( "unavailable", "", "" );
+        unregisterReceiver( receiver );
+        disconnect();
+    }
 
-        Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
+    private void disconnect()
+    {
         for( WebSocketManager webSocketManager : connectionMap.values() )
         {
             webSocketManager.disconnect();
         }
-        connectionMap.clear();
+        //connectionMap.clear();
     }
-
- 
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
     private Account findAccountByJID( String jid )
@@ -290,7 +356,9 @@ public class TreeggerService
     {
         accountStorage.updateAccount( account );
         WebSocketManager webSocketManager = connectionMap.remove( account );
+        removeRoster( account );
         webSocketManager.disconnect();
+
         connectionMap.put( account, new WebSocketManager( this, account ) );
     }
     
@@ -298,6 +366,7 @@ public class TreeggerService
     {
         accountStorage.removeAccount( account );
         WebSocketManager webSocketManager = connectionMap.remove( account );
+        removeRoster( account );
         webSocketManager.disconnect();
     }
     
@@ -309,6 +378,14 @@ public class TreeggerService
     
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
+    public void onConnecting()
+    {
+        broadcast( MESSAGE_TYPE_CONNECTING );
+    }
+    public void onConnectingFinished()
+    {
+        broadcast( MESSAGE_TYPE_CONNECTING_FINISHED );
+    }
     public void onAuthenticating()
     {
         broadcast( MESSAGE_TYPE_AUTHENTICATING );
@@ -316,6 +393,10 @@ public class TreeggerService
     public void onAuthenticatingFinished()
     {
         broadcast( MESSAGE_TYPE_AUTHENTICATING_FINISHED );
+    }
+    public void onDisconnected()
+    {
+        Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
     }
     
     
