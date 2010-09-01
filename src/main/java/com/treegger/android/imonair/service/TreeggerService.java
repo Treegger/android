@@ -1,4 +1,4 @@
-package com.treegger.android.im.service;
+package com.treegger.android.imonair.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,8 +23,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.widget.Toast;
 
-import com.treegger.android.im.R;
-import com.treegger.android.im.activity.Chat;
+import com.treegger.android.imonair.R;
+import com.treegger.android.imonair.activity.Chat;
 import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;

@@ -1,4 +1,4 @@
-package com.treegger.android.im.activity;
+package com.treegger.android.imonair.activity;
 
 import java.util.List;
 
@@ -11,8 +11,8 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.treegger.android.im.R;
-import com.treegger.android.im.service.TreeggerService;
+import com.treegger.android.imonair.R;
+import com.treegger.android.imonair.service.TreeggerService;
 
 public class Chat
     extends TreeggerActivity

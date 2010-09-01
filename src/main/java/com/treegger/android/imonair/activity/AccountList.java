@@ -1,4 +1,4 @@
-package com.treegger.android.im.activity;
+package com.treegger.android.imonair.activity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +21,8 @@ import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 
-import com.treegger.android.im.R;
-import com.treegger.android.im.service.Account;
+import com.treegger.android.imonair.R;
+import com.treegger.android.imonair.service.Account;
 
 public class AccountList
     extends TreeggerActivity

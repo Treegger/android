@@ -1,4 +1,4 @@
-package com.treegger.android.im.activity;
+package com.treegger.android.imonair.activity;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -12,7 +12,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 
-import com.treegger.android.im.service.TreeggerService;
+import com.treegger.android.imonair.service.TreeggerService;
 
 public abstract class TreeggerActivity extends Activity {
 

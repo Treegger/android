@@ -1,4 +1,4 @@
-package com.treegger.android.im.activity;
+package com.treegger.android.imonair.activity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,8 +23,8 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
-import com.treegger.android.im.R;
-import com.treegger.android.im.service.TreeggerService;
+import com.treegger.android.imonair.R;
+import com.treegger.android.imonair.service.TreeggerService;
 import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
