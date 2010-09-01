@@ -29,6 +29,7 @@ import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 import com.treegger.protobuf.WebSocketProto.TextMessage;
+import com.treegger.protobuf.WebSocketProto.VCardResponse;
 
 public class TreeggerService
     extends Service
@@ -376,8 +377,7 @@ public class TreeggerService
     {
         return accountStorage.getAccounts();
     }
-    
-    
+        
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
     public void onConnecting()
@@ -401,6 +401,14 @@ public class TreeggerService
         Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
     }
     
+    
+    public Map<String, VCardResponse> vcards = Collections.synchronizedMap( new HashMap<String, VCardResponse>() );
+    public void onVCard( VCardResponse vcard )
+    {
+        vcards.put( vcard.getFromUser(), vcard );
+        broadcast( MESSAGE_TYPE_ROSTER_UPDATE );
+    }
+
     
     private String visibleChatJID = null;
     

@@ -340,6 +340,10 @@ public class WebSocketManager implements WSEventHandler
             {
                 treeggerService.addRoster( account, data.getRoster() );
             }
+            else if( data.hasVcardResponse() )
+            {
+                treeggerService.onVCard( data.getVcardResponse() );
+            }
             else if( data.hasTextMessage() )
             {
                 lastActivity = System.currentTimeMillis();

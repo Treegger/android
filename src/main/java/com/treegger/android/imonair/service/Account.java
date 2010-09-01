@@ -10,6 +10,9 @@ public class Account implements Serializable
     public String name;
     public String socialnetwork;
     public String password;
+    
+    public String photoURL;
+    
     @Override
     public boolean equals( Object o )
     {

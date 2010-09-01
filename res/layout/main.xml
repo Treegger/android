@@ -3,6 +3,7 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:paddingTop="3dp"
     >
     
 <Spinner 
@@ -16,7 +17,7 @@
 <ListView android:id="@+id/roster_list" 
     android:layout_width="fill_parent" 
     android:layout_height="fill_parent"
-    android:padding="10dp"
+    android:padding="0dp"
     android:textSize="16sp" 
 />
 

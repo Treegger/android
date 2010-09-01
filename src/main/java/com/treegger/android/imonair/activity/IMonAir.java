@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -24,10 +25,12 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 import com.treegger.android.imonair.R;
+import com.treegger.android.imonair.component.ImageLoader;
 import com.treegger.android.imonair.service.TreeggerService;
 import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
+import com.treegger.protobuf.WebSocketProto.VCardResponse;
 
 public class IMonAir
     extends TreeggerActivity
@@ -38,9 +41,9 @@ public class IMonAir
     public void onMessageType( int messageType )
     {
         super.onMessageType( messageType );
-        switch( messageType )
+        switch ( messageType )
         {
-            case TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE :
+            case TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE:
             case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
             case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
                 updateRosters();
@@ -48,7 +51,6 @@ public class IMonAir
         }
 
     }
-
 
     private void updateRosters()
     {
@@ -63,20 +65,20 @@ public class IMonAir
                 }
 
             }
-            
+
             Collections.sort( rosterItemsList, new Comparator<RosterItem>()
-              {
+            {
                 @Override
                 public int compare( RosterItem item1, RosterItem item2 )
                 {
                     int typeDelta = getPresenceType( item1 ) - getPresenceType( item2 );
-                    if( typeDelta == 0 )
+                    if ( typeDelta == 0 )
                         return item1.getName().toLowerCase().compareTo( item2.getName().toLowerCase() );
-                    else return -typeDelta;
+                    else
+                        return -typeDelta;
                 }
-    
-              }
-            );
+
+            } );
 
             ListView rosterListView = (ListView) findViewById( R.id.roster_list );
             rosterListView.setAdapter( new RosterItemAdapter( this, R.layout.accountsline, rosterItemsList ) );
@@ -162,17 +164,15 @@ public class IMonAir
     {
         super.onDestroy();
     }
-    
-    
+
     @Override
     public void onTreeggerService()
     {
-        if( treeggerService.getAccounts().size() == 0 )
+        if ( treeggerService.getAccounts().size() == 0 )
         {
             startActivity( new Intent( this, AccountList.class ) );
         }
     }
-    
 
     private static final int MENU_ACCOUNTS = 1;
 
@@ -194,21 +194,31 @@ public class IMonAir
                 startActivity( new Intent( this, AccountList.class ) );
                 return true;
             case MENU_SIGNOUT:
-                if( treeggerService != null ) treeggerService.sendPresence( "unavailable", "", "" );
+                if ( treeggerService != null )
+                    treeggerService.sendPresence( "unavailable", "", "" );
                 System.exit( 0 );
                 return true;
         }
         return false;
     }
-    
-    
 
-    public class RosterItemAdapter extends ArrayAdapter<RosterItem>
+    
+    public class RosterItemAdapter
+        extends ArrayAdapter<RosterItem>
     {
 
         public RosterItemAdapter( Context context, int textViewResourceId, List<RosterItem> rosterItems )
         {
             super( context, textViewResourceId, rosterItems );
+        }
+
+        public void drawAvatar( ImageView image, RosterItem rosterItem )
+        {
+            VCardResponse vcard = treeggerService.vcards.get( rosterItem.getJid() );
+            if ( vcard != null && vcard.hasPhotoExternal() )
+            {
+                ImageLoader.load( image, vcard.getPhotoExternal() );
+            }
         }
 
         @Override
@@ -219,9 +229,13 @@ public class IMonAir
             TextView label = (TextView) row.findViewById( R.id.label );
 
             RosterItem rosterItem = getItem( position );
+
+            ImageView image = (ImageView) row.findViewById( R.id.photo );
+            drawAvatar( image, rosterItem );
+
             String text = rosterItem.getName();
             label.setText( text );
-            if( treeggerService.hasMessageFrom( rosterItem.getJid() ) )
+            if ( treeggerService.hasMessageFrom( rosterItem.getJid() ) )
             {
                 label.setTypeface( Typeface.DEFAULT_BOLD );
                 row.setBackgroundColor( 0x440F24BF );
@@ -229,7 +243,7 @@ public class IMonAir
             else
             {
                 label.setTypeface( Typeface.DEFAULT );
-                switch( getPresenceType( rosterItem ) )
+                switch ( getPresenceType( rosterItem ) )
                 {
                     case PRESENCE_TYPE_AVAILABLE:
                         row.setBackgroundColor( 0x449DE371 );
@@ -243,50 +257,46 @@ public class IMonAir
                     case PRESENCE_TYPE_UNAVAILABLE:
                 }
             }
-                
-
 
             //ImageView icon=(ImageView)row.findViewById(R.id.icon);
             return row;
         }
     }
 
-    
-    
     protected static final int PRESENCE_TYPE_UNAVAILABLE = 0;
+
     protected static final int PRESENCE_TYPE_AVAILABLE = 1;
+
     protected static final int PRESENCE_TYPE_AWAY = 2;
+
     protected static final int PRESENCE_TYPE_DND = 3;
-    
+
     protected int getPresenceType( RosterItem item )
     {
         Presence presence = treeggerService.getPresence( item.getJid() );
-        if( presence != null )
+        if ( presence != null )
         {
             String presenceStatus = presence.getStatus();
-            if( presenceStatus != null )
+            if ( presenceStatus != null )
             {
                 String presenceShow = presence.getShow();
 
-                if( presenceShow.equalsIgnoreCase( "away" ) || presenceShow.equalsIgnoreCase( "xa" ))
+                if ( presenceShow.equalsIgnoreCase( "away" ) || presenceShow.equalsIgnoreCase( "xa" ) )
                 {
                     return PRESENCE_TYPE_AWAY;
                 }
-                else if( presenceShow.equalsIgnoreCase( "dnd" ) )
+                else if ( presenceShow.equalsIgnoreCase( "dnd" ) )
                 {
                     return PRESENCE_TYPE_DND;
                 }
                 else
                 {
                     return PRESENCE_TYPE_AVAILABLE;
-                }                
+                }
             }
         }
         return PRESENCE_TYPE_UNAVAILABLE;
-        
+
     }
-    
+
 }
-
-
-    
