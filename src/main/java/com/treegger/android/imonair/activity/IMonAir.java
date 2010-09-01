@@ -29,7 +29,7 @@ import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.Roster;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 
-public class AndroIM
+public class IMonAir
     extends TreeggerActivity
 {
     public static final String TAG = "AndroIM";

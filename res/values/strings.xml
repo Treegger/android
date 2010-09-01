@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AndroIM</string>
+    <string name="app_name">IMonAir</string>
 
-	<string name="message_notification">AndroIM</string>
+	<string name="message_notification">IMonAir</string>
 	
 	<string name="presence_bar">Precence status</string>
     
