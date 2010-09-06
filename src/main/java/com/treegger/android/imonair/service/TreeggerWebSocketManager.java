@@ -20,7 +20,7 @@ import com.treegger.protobuf.WebSocketProto.WebSocketMessage;
 import com.treegger.websocket.WSConnector;
 import com.treegger.websocket.WSConnector.WSEventHandler;
 
-public class WebSocketManager implements WSEventHandler
+public class TreeggerWebSocketManager implements WSEventHandler
 {
     public static final String TAG = "WSHandler";
      
@@ -50,7 +50,7 @@ public class WebSocketManager implements WSEventHandler
     
     private AtomicInteger connectionState = new AtomicInteger(STATE_DISCONNECTED);
     
-    public WebSocketManager( TreeggerService treeggerService, Account account )
+    public TreeggerWebSocketManager( TreeggerService treeggerService, Account account )
     {
         this.treeggerService = treeggerService;
         this.account = account;

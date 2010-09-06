@@ -4,8 +4,10 @@ import java.util.List;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -78,16 +80,34 @@ public class Chat
         {
             public void onClick( View v )
             {
-                // Send a message using content of the edit text widget
-                TextView view = (TextView) findViewById( R.id.input_chat );
-                String message = view.getText().toString();
-                sendMessage( message );
-                view.clearComposingText();
-                view.setText( null );
+                sendMessage();
             }
         } );
+        
+        TextView view = (TextView) findViewById( R.id.input_chat );
+        
+        view.setOnEditorActionListener(new TextView.OnEditorActionListener() { 
+            @Override
+            public boolean onEditorAction( TextView v, int actionId, KeyEvent event )
+            {
+                if (actionId == EditorInfo.IME_ACTION_SEND) { 
+                    sendMessage(); 
+                } 
+                return false; 
+            } 
+        }); 
     }
 
+    private void sendMessage()
+    {
+        // Send a message using content of the edit text widget
+        TextView view = (TextView) findViewById( R.id.input_chat );
+        String message = view.getText().toString();
+        sendMessage( message );
+        view.clearComposingText();
+        view.setText( null );        
+    }
+    
     private void updateChatMessage()
     {
         ListView chatList = (ListView) findViewById( R.id.chat_list );
@@ -106,7 +126,6 @@ public class Chat
         if ( message.length() > 0 )
         {
             treeggerService.sendTextMessage( jid, message );
-
         }
     }
 }

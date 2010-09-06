@@ -44,6 +44,7 @@ public class TreeggerService
     public static final int     MESSAGE_TYPE_ROSTER_UPDATE = 1;
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
+    public static final int     MESSAGE_TYPE_VCARD_UPDATE = 33;
    
     public static final int     MESSAGE_TYPE_CONNECTING = 4;
     public static final int     MESSAGE_TYPE_CONNECTING_FINISHED = 5;
@@ -57,7 +58,7 @@ public class TreeggerService
     
     private AccountStorage accountStorage;
 
-    private Map<Account,WebSocketManager> connectionMap = new HashMap<Account, WebSocketManager>();
+    private Map<Account,TreeggerWebSocketManager> connectionMap = new HashMap<Account, TreeggerWebSocketManager>();
 
 
     // ----------------------------------------------------------------------------
@@ -108,18 +109,32 @@ public class TreeggerService
     
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
-    private Map<Account,Roster> rosterMap = Collections.synchronizedMap( new HashMap<Account, Roster>() );
+    private Map<Account,Roster> rosterMap = new HashMap<Account, Roster>();
  
-    public Map<Account,Roster> getRosters()
+    public synchronized Map<Account,Roster> getRosters()
     {
         return rosterMap;
     }
-    public void addRoster( Account account, Roster roster )
+    public synchronized List<RosterItem> getAllRosterItems()
+    {
+        List<RosterItem> rosterItemsList = new ArrayList<RosterItem>();
+
+        for ( Roster roster : getRosters().values() )
+        {
+            for ( RosterItem rosterItem : roster.getItemList() )
+            {
+                rosterItemsList.add( rosterItem );
+            }
+
+        }
+        return rosterItemsList;
+    }
+    public synchronized void addRoster( Account account, Roster roster )
     {
         rosterMap.put( account, roster );
         broadcast( MESSAGE_TYPE_ROSTER_UPDATE );
     }
-    public void removeRoster( Account account )
+    public synchronized void removeRoster( Account account )
     {
         rosterMap.remove( account );
         broadcast( MESSAGE_TYPE_ROSTER_UPDATE );
@@ -154,7 +169,11 @@ public class TreeggerService
     
     private String unXML( String s )
     {
-        return s.replace( "&apos;", "'" ).replace( "&quot;", "\"" ).replace( "&gt;", ">" ).replace( "&lt;", "<" );
+        return s.replace( "&apos;", "'" ).replace( "&quot;", "\"" ).replace( "&gt;", ">" ).replace( "&lt;", "<" ).replace( "&amp;", "&" );
+    }
+    private String toXML( String s )
+    {
+        return s.replace( "&", "&amp;" ).replace( "<", "&lt;" ).replace( ">", "&gt;" ).replace( "\"", "&quot;" ).replace( "'", "&apos;" );
     }
     private void addTextMessage( String from, String message, boolean localMessage )
     {
@@ -253,14 +272,14 @@ public class TreeggerService
     {
         for( Account account : getAccounts() )
         {
-            WebSocketManager webSocketManager = connectionMap.get( account );
+            TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
             if( webSocketManager != null  )
             {
                 webSocketManager.connect();
             }
             else
             {
-                connectionMap.put( account, new WebSocketManager( this, account ) );
+                connectionMap.put( account, new TreeggerWebSocketManager( this, account ) );
             }
         }        
     }
@@ -276,7 +295,7 @@ public class TreeggerService
 
     private void disconnect()
     {
-        for( WebSocketManager webSocketManager : connectionMap.values() )
+        for( TreeggerWebSocketManager webSocketManager : connectionMap.values() )
         {
             webSocketManager.disconnect();
         }
@@ -318,7 +337,7 @@ public class TreeggerService
     // ----------------------------------------------------------------------------
     public void sendPresence( String type, String show, String status )
     {
-        for( WebSocketManager webSocketManager : connectionMap.values() )
+        for( TreeggerWebSocketManager webSocketManager : connectionMap.values() )
         {
             webSocketManager.sendPresence( type, show, status );    
         }
@@ -329,8 +348,8 @@ public class TreeggerService
         Account account = findAccountByJID( jid );
         if( account != null )
         {
-            WebSocketManager webSocketManager = connectionMap.get( account );
-            webSocketManager.sendMessage( jid, text );
+            TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
+            webSocketManager.sendMessage( jid, toXML( text ) );
             addTextMessage( jid, "You: "+ text, true );
         }
     }
@@ -350,25 +369,25 @@ public class TreeggerService
     public void addAccount( Account account )
     {
         accountStorage.addAccount( account );
-        connectionMap.put( account, new WebSocketManager( this, account ) );
+        connectionMap.put( account, new TreeggerWebSocketManager( this, account ) );
         connect();
     }
 
     public void updateAccount( Account account )
     {
         accountStorage.updateAccount( account );
-        WebSocketManager webSocketManager = connectionMap.remove( account );
+        TreeggerWebSocketManager webSocketManager = connectionMap.remove( account );
         removeRoster( account );
         webSocketManager.disconnect();
         webSocketManager.connect();
 
-        connectionMap.put( account, new WebSocketManager( this, account ) );
+        connectionMap.put( account, new TreeggerWebSocketManager( this, account ) );
     }
     
     public void removeAccount( Account account )
     {
         accountStorage.removeAccount( account );
-        WebSocketManager webSocketManager = connectionMap.remove( account );
+        TreeggerWebSocketManager webSocketManager = connectionMap.remove( account );
         removeRoster( account );
         webSocketManager.disconnect();
     }
@@ -406,7 +425,7 @@ public class TreeggerService
     public void onVCard( VCardResponse vcard )
     {
         vcards.put( vcard.getFromUser(), vcard );
-        broadcast( MESSAGE_TYPE_ROSTER_UPDATE );
+        broadcast( MESSAGE_TYPE_VCARD_UPDATE );
     }
 
     
@@ -434,7 +453,8 @@ public class TreeggerService
             Intent intent = new Intent( this, Chat.class );
             intent.putExtra( Chat.EXTRA_ROSTER_JID, from );
 
-            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0 );
+            PendingIntent contentIntent = PendingIntent.getActivity( this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT );
+            
             notification.setLatestEventInfo(this, "AndroIM", message, contentIntent);
             notification.defaults |= Notification.DEFAULT_SOUND;
             

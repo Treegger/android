@@ -7,9 +7,10 @@
     	android:icon="@drawable/logo_48x48" 
     	android:label="@string/app_name"
     	android:debuggable="true"
+    	android:name=".activity.IMonAirApp" 
     >
     
-        <activity android:name=".activity.IMonAir" android:label="@string/app_name">
+        <activity android:name=".activity.RostersView" android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
