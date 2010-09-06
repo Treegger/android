@@ -1,5 +1,6 @@
 package com.treegger.android.imonair.activity;
 
+
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -12,6 +13,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 
+import com.treegger.android.imonair.R;
 import com.treegger.android.imonair.service.TreeggerService;
 
 public abstract class TreeggerActivity extends Activity {
@@ -127,9 +129,9 @@ public abstract class TreeggerActivity extends Activity {
         switch( dialogType )
         {
             case TreeggerService.MESSAGE_TYPE_CONNECTING:
-                return buildDialog( "Connecting", "Please wait...");
+                return buildDialog( null, getText(R.string.dialog_connection).toString() );
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING:
-                return buildDialog( "Authentication", "Please wait...");
+                return buildDialog( null, getText(R.string.dialog_authentication).toString() );
         }
         return null;
     }
