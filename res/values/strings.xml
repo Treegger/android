@@ -18,6 +18,9 @@
     
     <string name="menu_accounts">Accounts</string>
     <string name="menu_sign_out">Sign out</string>
+
+    <string name="dialog_connection">Connection...</string>
+    <string name="dialog_authentication">Authentication...</string>
     
     <string-array name="presenceType">
     	<item>Available</item>
