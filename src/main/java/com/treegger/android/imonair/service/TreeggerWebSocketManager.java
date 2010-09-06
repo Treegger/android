@@ -11,7 +11,6 @@ import android.util.Log;
 
 import com.treegger.protobuf.WebSocketProto.AuthenticateRequest;
 import com.treegger.protobuf.WebSocketProto.AuthenticateResponse;
-import com.treegger.protobuf.WebSocketProto.BindRequest;
 import com.treegger.protobuf.WebSocketProto.BindResponse;
 import com.treegger.protobuf.WebSocketProto.Ping;
 import com.treegger.protobuf.WebSocketProto.Presence;
@@ -79,7 +78,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
             break;
         }
     }
-    public void deactivate()
+    private void deactivate()
     {
         try
         {
@@ -121,25 +120,13 @@ public class TreeggerWebSocketManager implements WSEventHandler
         authReq.setUsername( username );
         authReq.setPassword( password.trim() );
         authReq.setResource( DEFAULT_RESOURCE );
+        if( sessionId != null ) authReq.setSessionId( sessionId );
         message.setAuthenticateRequest( authReq );
         sendWebSocketMessage( message );
     }
     
     
     
-    
-    private void bind()
-    {
-        if( hasSession() )
-        {
-            WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
-            BindRequest.Builder bindRequest = BindRequest.newBuilder();
-            bindRequest.setSessionId( sessionId );
-            message.setBindRequest( bindRequest );
-            sendWebSocketMessage( message );
-        }
-        
-    }
 
     public void sendPresence( String type, String show, String status )
     {
@@ -272,21 +259,16 @@ public class TreeggerWebSocketManager implements WSEventHandler
     @Override
     public void onOpen()
     {
-        connectionState.set( STATE_CONNECTED );
-        treeggerService.onConnectingFinished();
-        treeggerService.onAuthenticating();
-        if( !hasSession() )
+        if( connectionState.get() == STATE_CONNECTING )
         {
-            //treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authenticating" ) );
+            connectionState.set( STATE_CONNECTED );
+            treeggerService.onConnectingFinished();
+            treeggerService.onAuthenticating();
             authenticate( account.name, account.socialnetwork, account.password );
-        }
-        else
-        {
-            bind();
         }
     }
     
-    private void postAuthenticationOrBind()
+    private void postAuthentication()
     {
         authenticated = true;
         sendPresence( "", "", "" );
@@ -299,7 +281,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     @Override
     public void onMessage( byte[] message )
     {
-        try
+        if( connectionState.get() == STATE_CONNECTED ) try
         {
             WebSocketMessage data = WebSocketMessage.newBuilder().mergeFrom( message ).build();
             
@@ -312,7 +294,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
 
                 if( hasSession() )
                 {
-                    postAuthenticationOrBind();
+                    postAuthentication();
                 }
                 else
                 {
@@ -329,7 +311,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
 
                 if( hasSession() )
                 {
-                    postAuthenticationOrBind();
+                    postAuthentication();
                 }
                 else
                 {
@@ -372,6 +354,27 @@ public class TreeggerWebSocketManager implements WSEventHandler
     public void onError( Exception e )
     {
         treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Error: " + e.getMessage() ) );
+        if( connectionState.get() != STATE_DISCONNECTED )
+        {
+            try
+            {
+                if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
+                else reconnect();
+            }
+            catch( IOException ioe )
+            {
+                Log.w( TAG, "Closing socket error: " + ioe.getMessage()  );
+            }
+        }
+    }
+    
+    private void reconnect()
+    {
+        if( timer != null ) timer.cancel();
+        treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
+        connectionState.set( STATE_DISCONNECTED );
+        // TODO: should reconnect only if service is still running 
+        connect();   
     }
     
     @Override
@@ -381,11 +384,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
         {
             case STATE_CONNECTED:
             case STATE_CONNECTING:
-                if( timer != null ) timer.cancel();
-                treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
-                connectionState.set( STATE_DISCONNECTED );
-                // TODO: should reconnect only if service is still running 
-                connect();
+                reconnect();
                 break;
             case STATE_INACTIVE:
             case STATE_DISCONNECTED:
