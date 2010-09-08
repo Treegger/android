@@ -64,8 +64,11 @@ public class TreeggerWebSocketManager implements WSEventHandler
         switch( connectionState )
         {
             case STATE_DISCONNECTED: return "offline";
+            case STATE_CONNECTING: return "connecting";
             case STATE_CONNECTED: return "online";
             case STATE_PAUSED: return "sleep";
+            case STATE_DISCONNECTING: return "disconneting";
+            case STATE_PAUSING: return "sleeping";
         }
         return "";
     }
