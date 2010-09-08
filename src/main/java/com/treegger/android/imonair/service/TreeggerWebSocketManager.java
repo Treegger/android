@@ -126,6 +126,12 @@ public class TreeggerWebSocketManager implements WSEventHandler
                         LOCK.unlock();
                         doPauseReconnect();                    
                     }
+                    else if( connectionState == STATE_CONNECTING )
+                    {
+                        connectionState = STATE_CONNECTING;
+                        LOCK.unlock();
+                        doConnect();
+                    }
                     else if( connectionState == STATE_CONNECTED )
                     {
                         connectionState = STATE_CONNECTING;
