@@ -5,7 +5,8 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import android.util.Log;
 
@@ -36,7 +37,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private Timer timer;
     private long lastActivity = 0;
     
-    public static final String DEFAULT_RESOURCE = "AndroIM";
+    public static final String DEFAULT_RESOURCE = "AndroidIMonAir";
     
     public boolean authenticated = false;
     private String fromJID;
@@ -44,10 +45,196 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
-    private static final int STATE_INACTIVE = 3;
+    private static final int STATE_PAUSED = 3;
+    private static final int STATE_DISCONNECTING = 4;
+    private static final int STATE_PAUSING = 5;
     
+    private static final int TRANSITION_CONNECT = 1;
+    private static final int TRANSITION_CONNECTED = 2;
+    private static final int TRANSITION_PAUSE = 3;
+    private static final int TRANSITION_RECONNECT = 4;
+    private static final int TRANSITION_DISCONNECT = 5;
     
-    private AtomicInteger connectionState = new AtomicInteger(STATE_DISCONNECTED);
+    private static final Lock LOCK =  new ReentrantLock();
+    
+    private int connectionState = STATE_DISCONNECTED;
+    
+    public String getState()
+    {
+        switch( connectionState )
+        {
+            case STATE_DISCONNECTED: return "offline";
+            case STATE_CONNECTED: return "online";
+            case STATE_PAUSED: return "sleep";
+        }
+        return "";
+    }
+    
+    private void applyTransition( int transition )
+    {
+        try
+        {
+            LOCK.lockInterruptibly();
+            switch( transition )
+            {
+                case TRANSITION_CONNECT:
+                    if( connectionState == STATE_DISCONNECTED || connectionState == STATE_PAUSED )
+                    {
+                        connectionState = STATE_CONNECTING;
+                        LOCK.unlock();
+                        doConnect();
+                    }
+                    else
+                    {
+                        LOCK.unlock();
+                        doUnknownTransition();
+                    }
+                    break;
+                case TRANSITION_CONNECTED:
+                    if( connectionState == STATE_CONNECTING )
+                    {
+                        connectionState = STATE_CONNECTED;
+                        LOCK.unlock();
+                        doConnected();
+                    }
+                    else
+                    {
+                        LOCK.unlock();
+                        doUnknownTransition();
+                    }
+                    break;
+                case TRANSITION_PAUSE:
+                    if( connectionState == STATE_CONNECTED )
+                    {
+                        connectionState = STATE_PAUSING;
+                        LOCK.unlock();
+                        doPause();
+                        LOCK.lockInterruptibly();
+                        connectionState = STATE_PAUSED;
+                        LOCK.unlock();
+                    }
+                    else
+                    {
+                        LOCK.unlock();
+                        doUnknownTransition();
+                    }
+                    break;
+                case TRANSITION_RECONNECT:
+                    if( connectionState == STATE_PAUSED )
+                    {
+                        connectionState = STATE_CONNECTING;
+                        LOCK.unlock();
+                        doPauseReconnect();                    
+                    }
+                    else if( connectionState == STATE_CONNECTED )
+                    {
+                        connectionState = STATE_CONNECTING;
+                        LOCK.unlock();
+                        doReconnect();
+                    }
+                    else
+                    {
+                        LOCK.unlock();
+                        doUnknownTransition();
+                    }
+                    break;
+                case TRANSITION_DISCONNECT:
+                    if( connectionState == STATE_PAUSED || connectionState == STATE_CONNECTED || connectionState == STATE_CONNECTING )
+                    {
+                        connectionState = STATE_DISCONNECTING;
+                        LOCK.unlock();
+                        doDisconnect();
+                        LOCK.lockInterruptibly();
+                        connectionState = STATE_DISCONNECTED;
+                        LOCK.unlock();
+                    }
+                    else
+                    {
+                        LOCK.unlock();
+                        doUnknownTransition();
+                    }
+                    break;
+                    
+                default:
+                   LOCK.unlock();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.e( TAG, e.getMessage(), e );
+        }
+    }
+    
+    private void doUnknownTransition()
+    {
+        
+    }
+    
+    private void doConnect()
+    {
+        lastActivity = System.currentTimeMillis();
+        treeggerService.onConnecting();
+        try
+        {
+           if( wsConnector != null ) wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", true, this );
+        }
+        catch ( IOException e )
+        {
+            Log.v(TAG, "Connection failed");
+        }
+    }
+    private void doConnected()
+    {
+        if( timer == null )
+        {
+            timer = new Timer();
+            timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
+        }
+
+        treeggerService.onConnectingFinished();
+        treeggerService.onAuthenticating();
+        authenticate( account.name, account.socialnetwork, account.password );
+    }
+    private void doPause()
+    {
+        try
+        {
+            if( wsConnector != null  ) wsConnector.close();
+            treeggerService.onPaused();
+        }
+        catch ( IOException e )
+        {
+            Log.v(TAG, "Deactivate failed");
+        }
+
+    }
+    private void doPauseReconnect()
+    {
+        treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Resume connection " + account.name + "@"+account.socialnetwork ) );
+        doConnect();
+    }
+    private void doReconnect()
+    {
+        doDisconnect();
+        doConnect();
+    }
+    
+    private void doDisconnect()
+    {
+        try
+        {
+            if( timer != null ) timer.cancel();
+            timer = null;
+            if( wsConnector != null ) wsConnector.close();
+            treeggerService.onDisconnected();
+        }
+        catch ( IOException e )
+        {
+            Log.v(TAG, "Disconnection failed");
+        }
+        
+    }
+    
     
     public TreeggerWebSocketManager( TreeggerService treeggerService, Account account )
     {
@@ -58,58 +245,26 @@ public class TreeggerWebSocketManager implements WSEventHandler
         connect();
     }
 
-    public synchronized void connect()
+    public void connect()
     {
-        switch( connectionState.get() )
-        {
-            case STATE_DISCONNECTED:
-            case STATE_INACTIVE:
-                connectionState.set( STATE_CONNECTING );
-                lastActivity = System.currentTimeMillis();
-                treeggerService.onConnecting();
-                try
-                {
-                   if( wsConnector != null ) wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", this );
-                }
-                catch ( IOException e )
-                {
-                    Log.v(TAG, "Connection failed");
-                }
-            break;
-        }
+        applyTransition( TRANSITION_CONNECT );
     }
-    private void deactivate()
+    private void pause()
     {
-        try
-        {
-            sendPresence( "", "away", "" );
-            treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Deactivate " + account.name + "@"+account.socialnetwork ) );
-            connectionState.set( STATE_INACTIVE );
-            if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
-        }
-        catch ( IOException e )
-        {
-            Log.v(TAG, "Deactivate failed");
-        }
+        applyTransition( TRANSITION_PAUSE );
     }
     
     public void disconnect()
     {
-        int state = connectionState.get();
-        if( state == STATE_INACTIVE || state == STATE_DISCONNECTED || state == STATE_CONNECTING ) return;
-        try
-        {
-            connectionState.set( STATE_INACTIVE );
-            if( timer != null ) timer.cancel();
-
-            if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
-            treeggerService.onDisconnected();
-        }
-        catch ( IOException e )
-        {
-            Log.v(TAG, "Disconnection failed");
-        }
+        applyTransition( TRANSITION_DISCONNECT );
     }
+    
+    private void reconnect()
+    {
+        applyTransition( TRANSITION_RECONNECT );
+    }
+
+    
     
     private void authenticate( final String name, final String socialnetwork, final String password )
     {
@@ -186,11 +341,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         try
         {
-            if(!laterDeliveryQueue.isEmpty() && message.hasTextMessage() ) 
-            {
-                laterDeliveryQueue.add( message );
-            }
-            else if( connectionState.get() == STATE_CONNECTED && wsConnector != null && !wsConnector.isClosed()  )
+            if( connectionState == STATE_CONNECTED && wsConnector != null && !wsConnector.isClosed()  )
             {
                 wsConnector.send( message.build().toByteArray() );
             }
@@ -210,29 +361,24 @@ public class TreeggerWebSocketManager implements WSEventHandler
     // ----------------------------------------------------------------------------
     class PingTask extends TimerTask 
     {
-        private int inactiveCount = 0;
-        private final static long INACTIVITY_DELAY = 5*60*1000;
+        //private final static long INACTIVITY_DELAY = 5*60*1000;
+        private final static long PAUSE_DELAY = 60*1000;
+        private final static long PAUSE_DURATION = 60*1000;
         
         public void run() 
         {
             long now = System.currentTimeMillis();
-            if( lastActivity + INACTIVITY_DELAY < now )
+            if( lastActivity + PAUSE_DELAY < now && connectionState == STATE_CONNECTED )
             {
-                inactiveCount ++;
-                if( connectionState.get() == STATE_CONNECTED )
-                {
-                    deactivate();
-                }
-                if( inactiveCount > 5 )
-                {
-                    inactiveCount = 0;
-                    connectionState.set( STATE_DISCONNECTED );
-                    connect();
-                }
+                pause();
+            }
+            else if( lastActivity + PAUSE_DURATION < now && connectionState == STATE_PAUSED )
+            {
+                connect();
             }
             else
             {
-                if( hasSession() )
+                if( connectionState == STATE_CONNECTED && hasSession() )
                 {
                     WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
                     Ping.Builder ping = Ping.newBuilder();
@@ -259,13 +405,9 @@ public class TreeggerWebSocketManager implements WSEventHandler
     @Override
     public void onOpen()
     {
-        if( connectionState.get() == STATE_CONNECTING )
-        {
-            connectionState.set( STATE_CONNECTED );
-            treeggerService.onConnectingFinished();
-            treeggerService.onAuthenticating();
-            authenticate( account.name, account.socialnetwork, account.password );
-        }
+        authenticated = false;
+        applyTransition( TRANSITION_CONNECTED );
+        
     }
     
     private void postAuthentication()
@@ -273,15 +415,13 @@ public class TreeggerWebSocketManager implements WSEventHandler
         authenticated = true;
         sendPresence( "", "", "" );
         flushLaterWebSocketMessageQueue();
-        
-        timer = new Timer();
-        timer.schedule( new PingTask(), PING_DELAY, PING_DELAY );
     }
     
     @Override
     public void onMessage( byte[] message )
     {
-        if( connectionState.get() == STATE_CONNECTED ) try
+        if( connectionState == STATE_CONNECTED ) 
+        try
         {
             WebSocketMessage data = WebSocketMessage.newBuilder().mergeFrom( message ).build();
             
@@ -353,44 +493,14 @@ public class TreeggerWebSocketManager implements WSEventHandler
     @Override
     public void onError( Exception e )
     {
-        treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Error: " + e.getMessage() ) );
-        if( connectionState.get() != STATE_DISCONNECTED )
-        {
-            try
-            {
-                if( wsConnector != null && !wsConnector.isClosed() ) wsConnector.close();
-                else reconnect();
-            }
-            catch( IOException ioe )
-            {
-                Log.w( TAG, "Closing socket error: " + ioe.getMessage()  );
-            }
-        }
+        //treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Error: " + e.getMessage() ) );
+        reconnect();
     }
     
-    private void reconnect()
-    {
-        if( timer != null ) timer.cancel();
-        treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Disconnected" ) );
-        connectionState.set( STATE_DISCONNECTED );
-        // TODO: should reconnect only if service is still running 
-        connect();   
-    }
     
     @Override
     public void onClose()
     {
-        switch( connectionState.get() ) 
-        {
-            case STATE_CONNECTED:
-            case STATE_CONNECTING:
-                reconnect();
-                break;
-            case STATE_INACTIVE:
-            case STATE_DISCONNECTED:
-                break;
-                
-        }
     }
     
 

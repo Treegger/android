@@ -44,6 +44,7 @@ public class RostersView
                 updateRosters();
                 break;
                 
+            case TreeggerService.MESSAGE_TYPE_ROSTER_ADAPTER_UPDATE:
             case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
             case TreeggerService.MESSAGE_TYPE_VCARD_UPDATE:
             case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
@@ -149,7 +150,7 @@ public class RostersView
     public void onResume()
     {
         super.onResume();
-        //updateRosterAdapter();
+        updateRosterAdapter();
     }
 
     @Override

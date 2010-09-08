@@ -25,6 +25,7 @@ public abstract class TreeggerActivity extends Activity {
         public void onServiceConnected( ComponentName className, IBinder rawBinder )
         {
             treeggerService = ( (TreeggerService.LocalBinder) rawBinder ).getService();
+            updateTitle();
             onTreeggerService();
         }
 
@@ -58,6 +59,7 @@ public abstract class TreeggerActivity extends Activity {
                 showDialog(TreeggerService.MESSAGE_TYPE_CONNECTING);
                 break;
             case TreeggerService.MESSAGE_TYPE_CONNECTING_FINISHED:
+                getWindow().setTitle( "IMonAir" );
                 removeDialog( TreeggerService.MESSAGE_TYPE_CONNECTING);
                 break;
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING:
@@ -66,10 +68,18 @@ public abstract class TreeggerActivity extends Activity {
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING_FINISHED:
                 removeDialog( TreeggerService.MESSAGE_TYPE_AUTHENTICATING);
                 break;
+            case TreeggerService.MESSAGE_TYPE_PAUSED:
+                break;
         }
+        updateTitle();
     }
     
    
+    private void updateTitle()
+    {
+        if( treeggerService != null ) getWindow().setTitle( "IMonAir " + treeggerService.getConnectionStates() );
+    }
+    
     @Override
     public void onStart()
     {
@@ -81,6 +91,7 @@ public abstract class TreeggerActivity extends Activity {
     public void onResume()
     {
         super.onResume();
+        updateTitle();
         registerReceiver( receiver, new IntentFilter( TreeggerService.TREEGGER_BROADCAST_ACTION ) );
     }
 

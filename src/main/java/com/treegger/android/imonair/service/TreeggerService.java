@@ -21,7 +21,6 @@ import android.net.NetworkInfo;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
-import android.widget.Toast;
 
 import com.treegger.android.imonair.R;
 import com.treegger.android.imonair.activity.Chat;
@@ -42,6 +41,7 @@ public class TreeggerService
     
     
     public static final int     MESSAGE_TYPE_ROSTER_UPDATE = 1;
+    public static final int     MESSAGE_TYPE_ROSTER_ADAPTER_UPDATE = 11;
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
     public static final int     MESSAGE_TYPE_VCARD_UPDATE = 33;
@@ -50,6 +50,7 @@ public class TreeggerService
     public static final int     MESSAGE_TYPE_CONNECTING_FINISHED = 5;
     public static final int     MESSAGE_TYPE_AUTHENTICATING = 6;
     public static final int     MESSAGE_TYPE_AUTHENTICATING_FINISHED = 7;
+    public static final int     MESSAGE_TYPE_PAUSED = 8;
     
     private static final int MAX_MESSAGESLIST_SIZE = 100;
     
@@ -165,6 +166,7 @@ public class TreeggerService
     public void markHasReadMessageFrom( String from )
     {
         unconsumedMessageFroms.remove( from );
+        broadcast( MESSAGE_TYPE_ROSTER_ADAPTER_UPDATE );
     }
     
     private String unXML( String s )
@@ -182,7 +184,7 @@ public class TreeggerService
             List<String> messagesList = textMessageMap.get( from );
             if( messagesList == null )
             {
-                messagesList = new ArrayList<String>();
+                messagesList = Collections.synchronizedList( new ArrayList<String>() );
                 textMessageMap.put( from, messagesList );
             }
             else
@@ -284,6 +286,17 @@ public class TreeggerService
         }        
     }
 
+    public String getConnectionStates()
+    {
+        String states = ""; 
+        for( Account account : getAccounts() )
+        {
+            if( states.length()>0) states+= " - ";
+            TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
+            states += webSocketManager.getState();
+        }
+        return "("+states+")";
+    }
 
     @Override
     public void onDestroy()
@@ -415,9 +428,14 @@ public class TreeggerService
     {
         broadcast( MESSAGE_TYPE_AUTHENTICATING_FINISHED );
     }
+    public void onPaused()
+    {
+        broadcast( MESSAGE_TYPE_PAUSED );
+        handler.post( new DisplayToastRunnable( this, "Pause connection" ) );
+    }
     public void onDisconnected()
     {
-        Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
+        //Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
     }
     
     

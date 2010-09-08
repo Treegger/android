@@ -26,7 +26,6 @@ public class Chat
     
     private String jid;
     
-    private ArrayAdapter<String> chatMessageAdapter;
     
     
     @Override
@@ -57,7 +56,11 @@ public class Chat
     {
         Log.v( TAG, "Activity State: onResume()" );
         super.onResume();
-        if( treeggerService != null ) treeggerService.setVisibleChat( jid );
+        if( treeggerService != null )
+        {
+            treeggerService.setVisibleChat( jid );
+            updateChatMessage();
+        }
     }
 
     @Override
@@ -110,13 +113,22 @@ public class Chat
     
     private void updateChatMessage()
     {
-        ListView chatList = (ListView) findViewById( R.id.chat_list );
-        List<String> textMessages = treeggerService.getTextMessageList( jid );
         treeggerService.markHasReadMessageFrom( jid );
-        if( textMessages != null )
+        
+        ListView chatList = (ListView) findViewById( R.id.chat_list );
+        ArrayAdapter<String> chatMessageAdapter = (ArrayAdapter<String>)chatList.getAdapter();
+        if( chatMessageAdapter == null )
         {
-            chatMessageAdapter = new ArrayAdapter<String>( this, R.layout.chatmessage, textMessages );
-            chatList.setAdapter( chatMessageAdapter );
+            List<String> textMessages = treeggerService.getTextMessageList( jid );
+            if( textMessages != null )
+            {
+                chatMessageAdapter = new ArrayAdapter<String>( this, R.layout.chatmessage, textMessages );
+                chatList.setAdapter( chatMessageAdapter );
+            }
+        }
+        else
+        {
+            chatMessageAdapter.notifyDataSetChanged();
         }
     }
     
