@@ -37,7 +37,12 @@ public class Chat
         }
     }
 
-    
+    @Override
+    public void updateTitle()
+    {
+        if( treeggerService != null ) getWindow().setTitle( "IMonAir " + treeggerService.getConnectionStates() + " - "+ jid );
+    }
+
     
     @Override
     public void onCreate( Bundle savedInstanceState )
