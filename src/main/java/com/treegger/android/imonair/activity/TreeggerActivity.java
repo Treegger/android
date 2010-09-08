@@ -45,6 +45,7 @@ public abstract class TreeggerActivity extends Activity {
         {
             if( TreeggerService.TREEGGER_BROADCAST_ACTION.equals( intent.getAction() ) )
             {
+                updateTitle();
                 int messageType = intent.getIntExtra( TreeggerService.EXTRA_MESSAGE_TYPE, -1 );
                 onMessageType( messageType );
             }
@@ -71,11 +72,10 @@ public abstract class TreeggerActivity extends Activity {
             case TreeggerService.MESSAGE_TYPE_PAUSED:
                 break;
         }
-        updateTitle();
     }
     
    
-    private void updateTitle()
+    public void updateTitle()
     {
         if( treeggerService != null ) getWindow().setTitle( "IMonAir " + treeggerService.getConnectionStates() );
     }
