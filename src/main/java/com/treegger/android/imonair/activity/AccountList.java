@@ -138,11 +138,13 @@ public class AccountList
         {
             LayoutInflater inflater = getLayoutInflater();
             View row = inflater.inflate( R.layout.accountline, parent, false );
+            row.setBackgroundColor( 0xff222222 );
             TextView label = (TextView) row.findViewById( R.id.label );
             
             Account account = getItem( position );
             String text = account.name;
             if( account.socialnetwork != null ) text += "@" + getItem( position ).socialnetwork.toLowerCase();
+            label.setTextColor( 0xffffffff );
             label.setText( text );
 
             //ImageView icon=(ImageView)row.findViewById(R.id.icon);

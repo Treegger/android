@@ -327,12 +327,12 @@ public class RostersView
                 case PRESENCE_TYPE_AVAILABLE:
                 case PRESENCE_TYPE_AWAY:
                 case PRESENCE_TYPE_DND:
-                    row.setBackgroundColor( 0xeeeeeeee );
-                    label.setTextColor( 0xff000000 );
+                    row.setBackgroundColor( 0xff222222 );
+                    label.setTextColor( 0xffffffff );
                     break;
                 case PRESENCE_TYPE_UNAVAILABLE:
                     row.setBackgroundColor( 0x99222222 );
-                    label.setTextColor( 0xffffffff );
+                    label.setTextColor( 0x88ffffff );
                     break;
             }
             

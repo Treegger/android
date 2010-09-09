@@ -224,7 +224,8 @@ public class Chat
         {
             LayoutInflater inflater = getLayoutInflater();
             View row = inflater.inflate( R.layout.chatmessage, parent, false );
-
+            row.setBackgroundColor( 0xff222222 );
+            
             ChatMessage message = getItem( position );
             
             TextView label = (TextView) row.findViewById( R.id.message );
