@@ -116,15 +116,16 @@ public class TreeggerService
     {
         return rosterMap;
     }
+    
+    private List<RosterItem> rosterItemsList = new ArrayList<RosterItem>();
     public synchronized List<RosterItem> getAllRosterItems()
     {
-        List<RosterItem> rosterItemsList = new ArrayList<RosterItem>();
-
         for ( Roster roster : getRosters().values() )
         {
             for ( RosterItem rosterItem : roster.getItemList() )
             {
-                rosterItemsList.add( rosterItem );
+                if( !rosterItemsList.contains( rosterItem ) )
+                    rosterItemsList.add( rosterItem );
             }
 
         }
@@ -151,10 +152,10 @@ public class TreeggerService
     }
     
     
-    private Map<String,List<String>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<String>>() );
+    private Map<String,List<ChatMessage>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<ChatMessage>>() );
     private Set<String> unconsumedMessageFroms = Collections.synchronizedSet( new HashSet<String>() ); 
     
-    public List<String> getTextMessageList( String from )
+    public List<ChatMessage> getTextMessageList( String from )
     {
         return textMessageMap.get( from );
     }
@@ -177,15 +178,16 @@ public class TreeggerService
     {
         return s.replace( "&", "&amp;" ).replace( "<", "&lt;" ).replace( ">", "&gt;" ).replace( "\"", "&quot;" ).replace( "'", "&apos;" );
     }
-    private void addTextMessage( String from, String message, boolean localMessage )
+    private void addTextMessage( String targetChatJID, ChatMessage message, boolean localMessage )
     {
-        if( message != null && message.length() > 0 )
+        if( message != null && message.text != null && message.text.length() > 0 )
         {
-            List<String> messagesList = textMessageMap.get( from );
+            message.text = unXML( message.text );
+            List<ChatMessage> messagesList = textMessageMap.get( targetChatJID );
             if( messagesList == null )
             {
-                messagesList = Collections.synchronizedList( new ArrayList<String>() );
-                textMessageMap.put( from, messagesList );
+                messagesList = Collections.synchronizedList( new ArrayList<ChatMessage>() );
+                textMessageMap.put( targetChatJID, messagesList );
             }
             else
             {
@@ -194,11 +196,11 @@ public class TreeggerService
                     messagesList.remove( 0 );
                 }
             }
-            messagesList.add( unXML( message ) );
+            messagesList.add( message );
             if( !localMessage )
             {
-                unconsumedMessageFroms.add( from );
-                messageNotification( from, message );
+                unconsumedMessageFroms.add( message.userAndHost );
+                messageNotification( message );
             }
             broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
         }
@@ -208,7 +210,7 @@ public class TreeggerService
         String from = getUserAndHostFromJID( textMessage.getFromUser() );
         RosterItem rosterItem = findRosterItemByJID( from );
         if( rosterItem != null &&  textMessage.hasBody() )
-            addTextMessage( from, rosterItem.getName()+": " + textMessage.getBody(), false );
+            addTextMessage( from, new ChatMessage( from, textMessage.getBody() ), false );
     }
 
 
@@ -293,9 +295,10 @@ public class TreeggerService
         {
             if( states.length()>0) states+= " - ";
             TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
-            states += webSocketManager.getState();
+            states += webSocketManager.getStateName();
         }
-        return "("+states+")";
+        if( states.length() > 0 ) return "("+states+")";
+        else return "";
     }
 
     @Override
@@ -306,7 +309,7 @@ public class TreeggerService
         disconnect();
     }
 
-    private void disconnect()
+    public void disconnect()
     {
         for( TreeggerWebSocketManager webSocketManager : connectionMap.values() )
         {
@@ -357,13 +360,13 @@ public class TreeggerService
     }
     public void sendTextMessage( String jid, String text )
     {
-        
         Account account = findAccountByJID( jid );
         if( account != null )
         {
             TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
             webSocketManager.sendMessage( jid, toXML( text ) );
-            addTextMessage( jid, "You: "+ text, true );
+            String currentJid = accountStorage.getAccounts().get( 0 ).name.toLowerCase() + "@" + accountStorage.getAccounts().get( 0 ).socialnetwork.toLowerCase();
+            addTextMessage( jid, new ChatMessage( currentJid, text), true );
         }
     }
     
@@ -447,33 +450,32 @@ public class TreeggerService
     }
 
     
-    private String visibleChatJID = null;
+    private String visibleChatUserAndHost = null;
     
     
-    public void setVisibleChat( String jid )
+    public void setVisibleChat( String userAndHost )
     {
-        this.visibleChatJID = jid;
+        this.visibleChatUserAndHost = userAndHost;
     }
     
     
-    private void messageNotification( String from, String message )
+    private void messageNotification( ChatMessage chatMessage )
     {
-        if( visibleChatJID == null || !visibleChatJID.equalsIgnoreCase( from ) )
+        if( visibleChatUserAndHost == null || !visibleChatUserAndHost.equalsIgnoreCase( chatMessage.userAndHost ) )
         {
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            int icon = android.R.drawable.stat_notify_chat;
             
             CharSequence tickerText = getText(R.string.message_notification);
             long when = System.currentTimeMillis();
     
-            Notification notification = new Notification(icon, tickerText, when);
+            Notification notification = new Notification(android.R.drawable.stat_notify_chat, tickerText, when);
             
             Intent intent = new Intent( this, Chat.class );
-            intent.putExtra( Chat.EXTRA_ROSTER_JID, from );
+            intent.putExtra( Chat.EXTRA_ROSTER_JID, chatMessage.userAndHost );
 
             PendingIntent contentIntent = PendingIntent.getActivity( this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT );
             
-            notification.setLatestEventInfo(this, "AndroIM", message, contentIntent);
+            notification.setLatestEventInfo(this, "IMonAir", chatMessage.text, contentIntent);
             notification.defaults |= Notification.DEFAULT_SOUND;
             
             notificationManager.notify( R.string.message_notification, notification);

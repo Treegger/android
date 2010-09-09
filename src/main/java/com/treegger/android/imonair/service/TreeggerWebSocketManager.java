@@ -59,7 +59,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
     
     private int connectionState = STATE_DISCONNECTED;
     
-    public String getState()
+    // should be localized?
+    public String getStateName()
     {
         switch( connectionState )
         {

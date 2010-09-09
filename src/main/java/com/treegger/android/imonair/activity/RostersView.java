@@ -7,9 +7,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -77,7 +77,7 @@ public class RostersView
                 List<RosterItem> rosterItemsList = treeggerService.getAllRosterItems();
                 if( rosterItemsList != null && rosterItemsList.size() > 0 )
                 {
-                    rosterAdapter = new RosterItemAdapter( this, R.layout.accountsline, rosterItemsList );
+                    rosterAdapter = new RosterItemAdapter( this, R.layout.rosterline, rosterItemsList );
                     rosterAdapter.sort();
                     rosterListView.setAdapter( rosterAdapter );
                 }
@@ -136,6 +136,7 @@ public class RostersView
             @Override
             public void onItemClick( AdapterView<?> parent, View view, int position, long id )
             {
+                
                 RosterItem rosterItem = (RosterItem) parent.getAdapter().getItem( position );
                 Intent intent = new Intent( parent.getContext(), Chat.class );
                 intent.putExtra( Chat.EXTRA_ROSTER_JID, rosterItem.getJid() );
@@ -150,6 +151,7 @@ public class RostersView
     public void onResume()
     {
         super.onResume();
+        updateRosters();
         updateRosterAdapter();
     }
 
@@ -170,7 +172,7 @@ public class RostersView
     {
         if ( treeggerService.getAccounts().size() == 0 )
         {
-            startActivity( new Intent( this, AccountList.class ) );
+            startActivity( new Intent( this, AccountForm.class ) );
         }
         else
         {
@@ -178,14 +180,10 @@ public class RostersView
         }
     }
 
-    private static final int MENU_ACCOUNTS = 1;
-
-    private static final int MENU_SIGNOUT = 2;
-
     public boolean onCreateOptionsMenu( Menu menu )
     {
-        menu.add( 0, MENU_ACCOUNTS, 0, R.string.menu_accounts );
-        menu.add( 0, MENU_SIGNOUT, 0, R.string.menu_sign_out );
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.layout.mainmenu, menu);
         return true;
     }
 
@@ -193,13 +191,15 @@ public class RostersView
     {
         switch ( item.getItemId() )
         {
-            case MENU_ACCOUNTS:
-                Log.v( TAG, "Starting activity" );
+            case R.id.menu_accounts:
                 startActivity( new Intent( this, AccountList.class ) );
                 return true;
-            case MENU_SIGNOUT:
+            case R.id.menu_sign_out:
                 if ( treeggerService != null )
+                {
                     treeggerService.sendPresence( "unavailable", "", "" );
+                    treeggerService.disconnect();
+                }                
                 System.exit( 0 );
                 return true;
         }
@@ -210,6 +210,38 @@ public class RostersView
     
     // ------------------------------------------------------------------------------------------------
     // ------------------------------------------------------------------------------------------------
+    protected static final int PRESENCE_TYPE_UNAVAILABLE = 0;
+    protected static final int PRESENCE_TYPE_AVAILABLE = 1;
+    protected static final int PRESENCE_TYPE_AWAY = 2;
+    protected static final int PRESENCE_TYPE_DND = 3;
+    
+    protected int getPresenceType( RosterItem item )
+    {
+        Presence presence = treeggerService.getPresence( item.getJid() );
+        if ( presence != null )
+        {
+            String presenceStatus = presence.getStatus();
+            if ( presenceStatus != null )
+            {
+                String presenceShow = presence.getShow();
+                
+                if ( presenceShow.equalsIgnoreCase( "away" ) || presenceShow.equalsIgnoreCase( "xa" ) )
+                {
+                    return PRESENCE_TYPE_AWAY;
+                }
+                else if ( presenceShow.equalsIgnoreCase( "dnd" ) )
+                {
+                    return PRESENCE_TYPE_DND;
+                }
+                else
+                {
+                    return PRESENCE_TYPE_AVAILABLE;
+                }
+            }
+        }
+        return PRESENCE_TYPE_UNAVAILABLE;
+        
+    }
     // ------------------------------------------------------------------------------------------------
     // ------------------------------------------------------------------------------------------------    
     public class RosterItemAdapter
@@ -244,12 +276,15 @@ public class RostersView
             } );
         }
 
-        public void drawAvatar( ImageView image, RosterItem rosterItem )
+        public void drawAvatar( ImageView image, String jid )
         {
-            VCardResponse vcard = treeggerService.vcards.get( rosterItem.getJid() );
-            if ( vcard != null && vcard.hasPhotoExternal() )
+            if( treeggerService != null )
             {
-                ImageLoader.load( image, vcard.getPhotoExternal() );
+                VCardResponse vcard = treeggerService.vcards.get( jid );
+                if ( vcard != null && vcard.hasPhotoExternal() )
+                {
+                    ImageLoader.load( image, vcard.getPhotoExternal() );
+                }
             }
         }
 
@@ -257,37 +292,59 @@ public class RostersView
         public View getView( int position, View convertView, ViewGroup parent )
         {
             LayoutInflater inflater = getLayoutInflater();
-            View row = inflater.inflate( R.layout.accountsline, parent, false );
+            View row = inflater.inflate( R.layout.rosterline, parent, false );
             TextView label = (TextView) row.findViewById( R.id.label );
 
             RosterItem rosterItem = getItem( position );
 
             ImageView image = (ImageView) row.findViewById( R.id.photo );
-            drawAvatar( image, rosterItem );
+            drawAvatar( image, rosterItem.getJid() );
 
+            ImageView bullet = (ImageView) row.findViewById( R.id.bullet );
+            
+            
             String text = rosterItem.getName();
             label.setText( text );
+            int presenceType = getPresenceType( rosterItem );
+            switch ( presenceType )
+            {
+                case PRESENCE_TYPE_AVAILABLE:
+                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_green) );
+                    break;
+                case PRESENCE_TYPE_AWAY:
+                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_yellow) );
+                    break;
+                case PRESENCE_TYPE_DND:
+                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_red) );
+                    break;
+                case PRESENCE_TYPE_UNAVAILABLE:
+                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_grey) );
+                    break;
+            }
+            
+            switch ( presenceType )
+            {
+                case PRESENCE_TYPE_AVAILABLE:
+                case PRESENCE_TYPE_AWAY:
+                case PRESENCE_TYPE_DND:
+                    row.setBackgroundColor( 0xeeeeeeee );
+                    label.setTextColor( 0xff000000 );
+                    break;
+                case PRESENCE_TYPE_UNAVAILABLE:
+                    row.setBackgroundColor( 0x99222222 );
+                    label.setTextColor( 0xffffffff );
+                    break;
+            }
+            
             if ( treeggerService.hasMessageFrom( rosterItem.getJid() ) )
             {
                 label.setTypeface( Typeface.DEFAULT_BOLD );
                 row.setBackgroundColor( 0x440F24BF );
+                label.setTextColor( 0xffffffff );
             }
             else
             {
                 label.setTypeface( Typeface.DEFAULT );
-                switch ( getPresenceType( rosterItem ) )
-                {
-                    case PRESENCE_TYPE_AVAILABLE:
-                        row.setBackgroundColor( 0x449DE371 );
-                        break;
-                    case PRESENCE_TYPE_AWAY:
-                        row.setBackgroundColor( 0x44F7DB25 );
-                        break;
-                    case PRESENCE_TYPE_DND:
-                        row.setBackgroundColor( 0x44F76B25 );
-                        break;
-                    case PRESENCE_TYPE_UNAVAILABLE:
-                }
             }
 
             //ImageView icon=(ImageView)row.findViewById(R.id.icon);
@@ -295,41 +352,6 @@ public class RostersView
         }
         
         
-        protected static final int PRESENCE_TYPE_UNAVAILABLE = 0;
-        
-        protected static final int PRESENCE_TYPE_AVAILABLE = 1;
-        
-        protected static final int PRESENCE_TYPE_AWAY = 2;
-        
-        protected static final int PRESENCE_TYPE_DND = 3;
-        
-        protected int getPresenceType( RosterItem item )
-        {
-            Presence presence = treeggerService.getPresence( item.getJid() );
-            if ( presence != null )
-            {
-                String presenceStatus = presence.getStatus();
-                if ( presenceStatus != null )
-                {
-                    String presenceShow = presence.getShow();
-                    
-                    if ( presenceShow.equalsIgnoreCase( "away" ) || presenceShow.equalsIgnoreCase( "xa" ) )
-                    {
-                        return PRESENCE_TYPE_AWAY;
-                    }
-                    else if ( presenceShow.equalsIgnoreCase( "dnd" ) )
-                    {
-                        return PRESENCE_TYPE_DND;
-                    }
-                    else
-                    {
-                        return PRESENCE_TYPE_AVAILABLE;
-                    }
-                }
-            }
-            return PRESENCE_TYPE_UNAVAILABLE;
-            
-        }
         
         
 

@@ -1,20 +1,37 @@
 package com.treegger.android.imonair.activity;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
+import android.view.View.OnCreateContextMenuListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.treegger.android.imonair.R;
+import com.treegger.android.imonair.component.ImageLoader;
+import com.treegger.android.imonair.service.ChatMessage;
 import com.treegger.android.imonair.service.TreeggerService;
+import com.treegger.protobuf.WebSocketProto.VCardResponse;
 
 public class Chat
     extends TreeggerActivity
@@ -40,7 +57,11 @@ public class Chat
     @Override
     public void updateTitle()
     {
-        if( treeggerService != null ) getWindow().setTitle( "IMonAir " + treeggerService.getConnectionStates() + " - "+ jid );
+        if( treeggerService != null )
+        {
+            VCardResponse vcard = treeggerService.vcards.get( jid );
+            getWindow().setTitle( "IMonAir " + treeggerService.getConnectionStates() + " - "+ vcard.getFn() );
+        }
     }
 
     
@@ -121,13 +142,33 @@ public class Chat
         treeggerService.markHasReadMessageFrom( jid );
         
         ListView chatList = (ListView) findViewById( R.id.chat_list );
-        ArrayAdapter<String> chatMessageAdapter = (ArrayAdapter<String>)chatList.getAdapter();
+        chatList.setOnCreateContextMenuListener( new OnCreateContextMenuListener()
+        {
+            @Override
+            public void onCreateContextMenu( ContextMenu menu, View v, ContextMenuInfo menuInfo )
+            {
+                AdapterContextMenuInfo adapterMenuInfo = (AdapterContextMenuInfo) menuInfo;
+                
+                TextView label = (TextView)adapterMenuInfo.targetView.findViewById( R.id.message );
+                
+                Pattern pattern = Pattern.compile("\\b((http://|www\\.)\\S+)\\b");
+                Matcher matcher = pattern.matcher( label.getText().toString() );
+                int i = 0;
+                while (matcher.find()) 
+                {
+                    menu.add( 0, i++, 0, matcher.group() );
+                }
+            }
+        } );
+
+        
+        ChatMessageAdapter chatMessageAdapter = (ChatMessageAdapter)chatList.getAdapter();
         if( chatMessageAdapter == null )
         {
-            List<String> textMessages = treeggerService.getTextMessageList( jid );
+            List<ChatMessage> textMessages = treeggerService.getTextMessageList( jid );
             if( textMessages != null )
             {
-                chatMessageAdapter = new ArrayAdapter<String>( this, R.layout.chatmessage, textMessages );
+                chatMessageAdapter = new ChatMessageAdapter( this, R.layout.chatmessage, textMessages );
                 chatList.setAdapter( chatMessageAdapter );
             }
         }
@@ -145,4 +186,59 @@ public class Chat
             treeggerService.sendTextMessage( jid, message );
         }
     }
+    
+    @Override
+    public boolean onContextItemSelected( MenuItem menuItem )
+    {
+        String url = menuItem.getTitle().toString();
+        Intent intent = new Intent( Intent.ACTION_VIEW, Uri.parse( url ) );
+        startActivity( intent);
+        return false;
+    }
+
+    
+    public class ChatMessageAdapter extends ArrayAdapter<ChatMessage>
+    {
+        private SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+        
+        public ChatMessageAdapter( Context context, int textViewResourceId, List<ChatMessage> messages )
+        {
+            super( context, textViewResourceId, messages );
+        }
+        public void drawAvatar( ImageView image, String jid )
+        {
+            if( treeggerService != null )
+            {
+                VCardResponse vcard = treeggerService.vcards.get( jid );
+                if ( vcard != null && vcard.hasPhotoExternal() )
+                {
+                    ImageLoader.load( image, vcard.getPhotoExternal() );
+                }
+            }
+        }
+
+        
+        
+        @Override
+        public View getView( int position, View convertView, ViewGroup parent )
+        {
+            LayoutInflater inflater = getLayoutInflater();
+            View row = inflater.inflate( R.layout.chatmessage, parent, false );
+
+            ChatMessage message = getItem( position );
+            
+            TextView label = (TextView) row.findViewById( R.id.message );
+            label.setText( message.text );
+
+            TextView dateLabel = (TextView) row.findViewById( R.id.date );
+            dateLabel.setText( sdf.format( message.date ) );
+            
+            ImageView photo=(ImageView)row.findViewById(R.id.photo);
+            drawAvatar( photo, message.userAndHost );
+            return row;
+        }
+
+        
+    }
+
 }

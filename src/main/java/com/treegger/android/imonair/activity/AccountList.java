@@ -101,7 +101,7 @@ public class AccountList
             addAccountItem.name = "Add account...";
             List<Account> adapterList = new ArrayList<Account>( accounts );
             adapterList.add( addAccountItem );
-            lv.setAdapter( new AccountAdapter( this,  R.layout.accountsline, adapterList ) );
+            lv.setAdapter( new AccountAdapter( this,  R.layout.accountline, adapterList ) );
         }
         return lv;
     }
@@ -137,7 +137,7 @@ public class AccountList
         public View getView( int position, View convertView, ViewGroup parent )
         {
             LayoutInflater inflater = getLayoutInflater();
-            View row = inflater.inflate( R.layout.accountsline, parent, false );
+            View row = inflater.inflate( R.layout.accountline, parent, false );
             TextView label = (TextView) row.findViewById( R.id.label );
             
             Account account = getItem( position );
