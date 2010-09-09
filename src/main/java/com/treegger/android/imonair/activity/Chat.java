@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnCreateContextMenuListener;
@@ -43,15 +44,26 @@ public class Chat
     
     private String jid;
     
-    
-    
     @Override
     public void onMessageType( int messageType )
     {
-        if ( messageType == TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE )
+        super.onMessageType( messageType );
+        switch ( messageType )
         {
-            updateChatMessage();
+            case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
+                updateChatMessage();
+                break;
+            case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
+                updatePresenceTitle();
+                break;
         }
+
+    }
+
+    private void updatePresenceTitle()
+    {
+        ImageView bullet = (ImageView) findViewById( R.id.window_bullet );
+        updatePresenceType( jid, bullet );    
     }
 
     @Override
@@ -59,8 +71,11 @@ public class Chat
     {
         if( treeggerService != null )
         {
-            VCardResponse vcard = treeggerService.vcards.get( jid );
-            getWindow().setTitle( "IMonAir " + treeggerService.getConnectionStates() + " - "+ vcard.getFn() );
+            if( treeggerService != null )
+            {
+                TextView title = (TextView) findViewById( R.id.window_title );
+                title.setText( "IMonAir " + treeggerService.getConnectionStates() );
+            }
         }
     }
 
@@ -71,9 +86,18 @@ public class Chat
         Log.v( TAG, "Activity State: onCreate()" );
         super.onCreate( savedInstanceState );
 
+        boolean customTitleSupported = requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
+        
         setContentView( R.layout.chat );
 
+        if( customTitleSupported )
+        {
+            getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.windowtitle);
+        }
+        
+
         jid = getIntent().getStringExtra( EXTRA_ROSTER_JID );
+        
         
     }
 
@@ -100,7 +124,13 @@ public class Chat
     public void onTreeggerService()
     {
         super.onTreeggerService();
+        
+        VCardResponse vcard = treeggerService.vcards.get( jid );
+        TextView username = (TextView) findViewById( R.id.window_username );
+        username.setText( vcard.getFn() );
+        updatePresenceTitle();
 
+        
         treeggerService.setVisibleChat( jid );
         updateChatMessage();
         
@@ -141,7 +171,11 @@ public class Chat
     {
         treeggerService.markHasReadMessageFrom( jid );
         
+        
+        
         ListView chatList = (ListView) findViewById( R.id.chat_list );
+        
+        
         chatList.setOnCreateContextMenuListener( new OnCreateContextMenuListener()
         {
             @Override

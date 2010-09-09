@@ -12,9 +12,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.widget.ImageView;
 
 import com.treegger.android.imonair.R;
 import com.treegger.android.imonair.service.TreeggerService;
+import com.treegger.protobuf.WebSocketProto.Presence;
 
 public abstract class TreeggerActivity extends Activity {
 
@@ -148,4 +150,61 @@ public abstract class TreeggerActivity extends Activity {
     }
     
     
+    // ------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
+    protected static final int PRESENCE_TYPE_UNAVAILABLE = 0;
+    protected static final int PRESENCE_TYPE_AVAILABLE = 1;
+    protected static final int PRESENCE_TYPE_AWAY = 2;
+    protected static final int PRESENCE_TYPE_DND = 3;
+    
+    protected int getPresenceType( String jid )
+    {
+        if( treeggerService != null )
+        {
+            Presence presence = treeggerService.getPresence( jid );
+            if ( presence != null )
+            {
+                String presenceStatus = presence.getStatus();
+                if ( presenceStatus != null )
+                {
+                    String presenceShow = presence.getShow();
+                    
+                    if ( presenceShow.equalsIgnoreCase( "away" ) || presenceShow.equalsIgnoreCase( "xa" ) )
+                    {
+                        return PRESENCE_TYPE_AWAY;
+                    }
+                    else if ( presenceShow.equalsIgnoreCase( "dnd" ) )
+                    {
+                        return PRESENCE_TYPE_DND;
+                    }
+                    else
+                    {
+                        return PRESENCE_TYPE_AVAILABLE;
+                    }
+                }
+            }
+        }
+        return PRESENCE_TYPE_UNAVAILABLE;
+        
+    }
+    protected void updatePresenceType( String jid, ImageView bullet )
+    {
+        int presenceType = getPresenceType( jid );
+        switch ( presenceType )
+        {
+            case PRESENCE_TYPE_AVAILABLE:
+                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_green) );
+                break;
+            case PRESENCE_TYPE_AWAY:
+                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_yellow) );
+                break;
+            case PRESENCE_TYPE_DND:
+                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_red) );
+                break;
+            case PRESENCE_TYPE_UNAVAILABLE:
+                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_grey) );
+                break;
+        }
+    }
+
 }

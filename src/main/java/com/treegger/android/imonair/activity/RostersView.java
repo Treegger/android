@@ -25,7 +25,6 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import com.treegger.android.imonair.R;
 import com.treegger.android.imonair.component.ImageLoader;
 import com.treegger.android.imonair.service.TreeggerService;
-import com.treegger.protobuf.WebSocketProto.Presence;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 import com.treegger.protobuf.WebSocketProto.VCardResponse;
 
@@ -209,40 +208,6 @@ public class RostersView
     
     
     // ------------------------------------------------------------------------------------------------
-    // ------------------------------------------------------------------------------------------------
-    protected static final int PRESENCE_TYPE_UNAVAILABLE = 0;
-    protected static final int PRESENCE_TYPE_AVAILABLE = 1;
-    protected static final int PRESENCE_TYPE_AWAY = 2;
-    protected static final int PRESENCE_TYPE_DND = 3;
-    
-    protected int getPresenceType( RosterItem item )
-    {
-        Presence presence = treeggerService.getPresence( item.getJid() );
-        if ( presence != null )
-        {
-            String presenceStatus = presence.getStatus();
-            if ( presenceStatus != null )
-            {
-                String presenceShow = presence.getShow();
-                
-                if ( presenceShow.equalsIgnoreCase( "away" ) || presenceShow.equalsIgnoreCase( "xa" ) )
-                {
-                    return PRESENCE_TYPE_AWAY;
-                }
-                else if ( presenceShow.equalsIgnoreCase( "dnd" ) )
-                {
-                    return PRESENCE_TYPE_DND;
-                }
-                else
-                {
-                    return PRESENCE_TYPE_AVAILABLE;
-                }
-            }
-        }
-        return PRESENCE_TYPE_UNAVAILABLE;
-        
-    }
-    // ------------------------------------------------------------------------------------------------
     // ------------------------------------------------------------------------------------------------    
     public class RosterItemAdapter
         extends ArrayAdapter<RosterItem>
@@ -260,8 +225,8 @@ public class RostersView
                 @Override
                 public int compare( RosterItem item1, RosterItem item2 )
                 {
-                    int presentType1 = getPresenceType( item1 );
-                    int presentType2 = getPresenceType( item2 );
+                    int presentType1 = getPresenceType( item1.getJid() );
+                    int presentType2 = getPresenceType( item2.getJid() );
                     int typeDelta =  presentType2 - presentType1;
                     if ( typeDelta == 0 )
                         return item1.getName().toLowerCase().compareTo( item2.getName().toLowerCase() );
@@ -305,23 +270,9 @@ public class RostersView
             
             String text = rosterItem.getName();
             label.setText( text );
-            int presenceType = getPresenceType( rosterItem );
-            switch ( presenceType )
-            {
-                case PRESENCE_TYPE_AVAILABLE:
-                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_green) );
-                    break;
-                case PRESENCE_TYPE_AWAY:
-                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_yellow) );
-                    break;
-                case PRESENCE_TYPE_DND:
-                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_red) );
-                    break;
-                case PRESENCE_TYPE_UNAVAILABLE:
-                    bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_grey) );
-                    break;
-            }
-            
+            int presenceType = getPresenceType( rosterItem.getJid() );
+            updatePresenceType( rosterItem.getJid(), bullet );
+
             switch ( presenceType )
             {
                 case PRESENCE_TYPE_AVAILABLE:

@@ -10,15 +10,15 @@
         android:id="@+id/photo"
         android:src="@drawable/default_avatar_48x48"
         android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentBottom="true"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
         android:layout_marginRight="6dp" />
-	        
+
+ 
 <TextView 
  	android:id="@+id/label"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
+    android:layout_height="fill_parent"
     android:padding="10dp"
     android:textSize="16sp"
     android:layout_toRightOf="@id/photo"
@@ -29,8 +29,8 @@
         android:src="@drawable/bullet_grey"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:paddingTop="8dp"
         android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
         />
 
 
