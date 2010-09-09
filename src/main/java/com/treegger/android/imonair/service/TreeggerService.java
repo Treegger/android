@@ -124,8 +124,16 @@ public class TreeggerService
         {
             for ( RosterItem rosterItem : roster.getItemList() )
             {
-                if( !rosterItemsList.contains( rosterItem ) )
-                    rosterItemsList.add( rosterItem );
+                boolean found = false;
+                for( RosterItem item : rosterItemsList )
+                {
+                    if( item.getJid().equals( rosterItem.getJid() ) )
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if( !found ) rosterItemsList.add( rosterItem );
             }
 
         }
