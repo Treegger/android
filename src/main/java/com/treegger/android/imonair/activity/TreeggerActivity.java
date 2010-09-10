@@ -189,21 +189,32 @@ public abstract class TreeggerActivity extends Activity {
     }
     protected void updatePresenceType( String jid, ImageView bullet )
     {
-        int presenceType = getPresenceType( jid );
-        switch ( presenceType )
+        if( treeggerService != null )
         {
-            case PRESENCE_TYPE_AVAILABLE:
-                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_green) );
-                break;
-            case PRESENCE_TYPE_AWAY:
-                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_yellow) );
-                break;
-            case PRESENCE_TYPE_DND:
-                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_red) );
-                break;
-            case PRESENCE_TYPE_UNAVAILABLE:
-                bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_grey) );
-                break;
+            
+            if( treeggerService.isComposing( jid ) )
+            {
+                bullet.setImageDrawable( getResources().getDrawable(R.drawable.composing) );
+            }
+            else
+            {
+                int presenceType = getPresenceType( jid );
+                switch ( presenceType )
+                {
+                    case PRESENCE_TYPE_AVAILABLE:
+                        bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_green) );
+                        break;
+                    case PRESENCE_TYPE_AWAY:
+                        bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_yellow) );
+                        break;
+                    case PRESENCE_TYPE_DND:
+                        bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_red) );
+                        break;
+                    case PRESENCE_TYPE_UNAVAILABLE:
+                        bullet.setImageDrawable( getResources().getDrawable(R.drawable.bullet_grey) );
+                        break;
+                }
+            }
         }
     }
 

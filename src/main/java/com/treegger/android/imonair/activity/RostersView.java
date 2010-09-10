@@ -47,6 +47,7 @@ public class RostersView
             case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
             case TreeggerService.MESSAGE_TYPE_VCARD_UPDATE:
             case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
+            case TreeggerService.MESSAGE_TYPE_COMPOSING:
                 updateRosterAdapter();
                 break;
         }
@@ -271,7 +272,6 @@ public class RostersView
             String text = rosterItem.getName();
             label.setText( text );
             int presenceType = getPresenceType( rosterItem.getJid() );
-            updatePresenceType( rosterItem.getJid(), bullet );
 
             switch ( presenceType )
             {
@@ -289,12 +289,14 @@ public class RostersView
             
             if ( treeggerService.hasMessageFrom( rosterItem.getJid() ) )
             {
+                bullet.setImageDrawable( getResources().getDrawable(R.drawable.hasmessage) );
                 label.setTypeface( Typeface.DEFAULT_BOLD );
                 row.setBackgroundColor( 0x440F24BF );
                 label.setTextColor( 0xffffffff );
             }
             else
             {
+                updatePresenceType( rosterItem.getJid(), bullet );
                 label.setTypeface( Typeface.DEFAULT );
             }
 

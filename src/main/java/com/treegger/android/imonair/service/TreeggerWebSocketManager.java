@@ -325,6 +325,27 @@ public class TreeggerWebSocketManager implements WSEventHandler
             sendWebSocketMessage( message );
         }
     }
+    public void sendStateNotificationMessage( String to, boolean composing, boolean paused, boolean active, boolean gone )
+    {
+        if( authenticated )
+        {
+            lastActivity = System.currentTimeMillis();
+            WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
+            TextMessage.Builder textMessage = TextMessage.newBuilder();
+            
+            textMessage.setFromUser( fromJID );
+            textMessage.setToUser( to );
+            textMessage.setType("chat");
+
+            textMessage.setComposing( composing );
+            textMessage.setActive( active );
+            textMessage.setPaused( paused );
+            textMessage.setGone( gone );
+
+            message.setTextMessage( textMessage );
+            sendWebSocketMessage( message );
+        }
+    }
 
     
     // ----------------------------------------------------------------------------
@@ -371,9 +392,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
     // ----------------------------------------------------------------------------
     class PingTask extends TimerTask 
     {
-        //private final static long INACTIVITY_DELAY = 5*60*1000;
         private final static long PAUSE_DELAY = 60*1000;
-        private final static long PAUSE_DURATION = 60*1000;
+        private final static long PAUSE_DURATION = 5*60*1000;
         
         public void run() 
         {

@@ -45,7 +45,9 @@ public class TreeggerService
     public static final int     MESSAGE_TYPE_TEXTMESSAGE_UPDATE = 2;
     public static final int     MESSAGE_TYPE_PRESENCE_UPDATE = 3;
     public static final int     MESSAGE_TYPE_VCARD_UPDATE = 33;
-   
+    public static final int     MESSAGE_TYPE_COMPOSING = 34;      
+    
+    
     public static final int     MESSAGE_TYPE_CONNECTING = 4;
     public static final int     MESSAGE_TYPE_CONNECTING_FINISHED = 5;
     public static final int     MESSAGE_TYPE_AUTHENTICATING = 6;
@@ -213,12 +215,42 @@ public class TreeggerService
             broadcast( MESSAGE_TYPE_TEXTMESSAGE_UPDATE );
         }
     }
+    
+    
+    
+    private Map<String,Boolean> messageComposingMap = Collections.synchronizedMap( new HashMap<String,Boolean>() ); 
+
     public void addTextMessage( Account account, TextMessage textMessage )
     {
         String from = getUserAndHostFromJID( textMessage.getFromUser() );
         RosterItem rosterItem = findRosterItemByJID( from );
-        if( rosterItem != null &&  textMessage.hasBody() )
-            addTextMessage( from, new ChatMessage( from, textMessage.getBody() ), false );
+        if( rosterItem != null )
+        {
+            if( textMessage.hasBody() )
+            {
+                addTextMessage( from, new ChatMessage( from, textMessage.getBody() ), false );
+                Boolean value = messageComposingMap.remove( from );
+                if( value != null ) broadcast( MESSAGE_TYPE_COMPOSING );
+            }
+            else
+            {
+                if( textMessage.hasComposing() && textMessage.getComposing() )
+                {
+                    messageComposingMap.put(  from, true );
+                }
+                else
+                {
+                    messageComposingMap.remove( from );
+                }
+                broadcast( MESSAGE_TYPE_COMPOSING );
+            }
+        }
+    }
+    public boolean isComposing( String jid )
+    {
+        Boolean composing = messageComposingMap.get( jid );
+        if( composing == null ) return false;
+        return composing;
     }
 
 
@@ -377,7 +409,16 @@ public class TreeggerService
             addTextMessage( jid, new ChatMessage( currentJid, text), true );
         }
     }
-    
+    public void sendStateNotificationMessage( String to, boolean composing, boolean paused, boolean active, boolean gone )
+    {
+        Account account = findAccountByJID( to );
+        if( account != null )
+        {
+            TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
+            webSocketManager.sendStateNotificationMessage( to, composing, paused, active, gone );
+        }
+    }
+
     
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------

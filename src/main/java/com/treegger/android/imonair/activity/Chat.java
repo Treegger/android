@@ -2,6 +2,9 @@ package com.treegger.android.imonair.activity;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +23,7 @@ import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnCreateContextMenuListener;
+import android.view.View.OnKeyListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -54,6 +58,7 @@ public class Chat
                 updateChatMessage();
                 break;
             case TreeggerService.MESSAGE_TYPE_PRESENCE_UPDATE:
+            case TreeggerService.MESSAGE_TYPE_COMPOSING:
                 updatePresenceTitle();
                 break;
         }
@@ -98,7 +103,24 @@ public class Chat
 
         jid = getIntent().getStringExtra( EXTRA_ROSTER_JID );
         
-        
+        final TextView textInput = (TextView) findViewById( R.id.input_chat );
+        textInput.setOnKeyListener( new OnKeyListener()
+        {
+            @Override
+            public boolean onKey( View v, int keyCode, KeyEvent event )
+            {
+                if( textInput.getText().length() > 0 )
+                {
+                    composingMessage();
+                }
+                else
+                {
+                    stopComposingMessage();
+                }
+                return false;
+            }
+        });
+
     }
 
     @Override
@@ -117,7 +139,8 @@ public class Chat
     public void onPause()
     {
         super.onPause();
-        if( treeggerService != null ) treeggerService.setVisibleChat( null );        
+        if( treeggerService != null ) treeggerService.setVisibleChat( null );
+        stopComposingMessage();
     }
 
     @Override
@@ -157,6 +180,61 @@ public class Chat
         }); 
     }
 
+    
+    private Boolean composing = false;
+    private Timer composingTimer;
+    public AtomicLong lastComposingActivity = new AtomicLong();
+
+    private class ComposingTask extends TimerTask
+    {
+        @Override
+        public void run()
+        {
+            long now = System.currentTimeMillis();
+            if( lastComposingActivity.get() + 5*1000 < now  )
+                stopComposingMessage();
+        }
+    };
+
+    
+    private void composingMessage()
+    {
+        if( treeggerService != null)
+        {
+            synchronized ( composing )
+            {                
+                lastComposingActivity.set( System.currentTimeMillis() );
+                if( !composing )
+                {
+                    composing = true;
+                    composingTimer = new Timer();
+                    composingTimer.schedule( new ComposingTask(), 1000, 1000 );
+                    treeggerService.sendStateNotificationMessage( jid, true, false, false, false );
+                }
+            }
+        }
+    }
+    private void stopComposingMessage()
+    {
+        if( treeggerService != null )
+        {
+            synchronized ( composing )
+            {                
+                if( composing )
+                {
+                    treeggerService.sendStateNotificationMessage( jid, false, false, true, false );
+                    if( composingTimer != null )
+                    {
+                        composingTimer.cancel();
+                        composingTimer.purge();
+                        composingTimer = null;
+                    }
+                    composing = false;
+                }
+            }
+        }
+    }
+    
     private void sendMessage()
     {
         // Send a message using content of the edit text widget
@@ -166,7 +244,15 @@ public class Chat
         view.clearComposingText();
         view.setText( null );        
     }
-    
+    private void sendMessage( String message )
+    {
+        // Check that there's actually something to send
+        if ( message.length() > 0 )
+        {
+            treeggerService.sendTextMessage( jid, message );
+        }
+    }
+
     private void updateChatMessage()
     {
         treeggerService.markHasReadMessageFrom( jid );
@@ -185,7 +271,7 @@ public class Chat
                 
                 TextView label = (TextView)adapterMenuInfo.targetView.findViewById( R.id.message );
                 
-                Pattern pattern = Pattern.compile("\\b((http://|www\\.)\\S+)\\b");
+                Pattern pattern = Pattern.compile("\\b((http[s]?://|www\\.)\\S+)\\b");
                 Matcher matcher = pattern.matcher( label.getText().toString() );
                 int i = 0;
                 while (matcher.find()) 
@@ -212,14 +298,6 @@ public class Chat
         }
     }
     
-    private void sendMessage( String message )
-    {
-        // Check that there's actually something to send
-        if ( message.length() > 0 )
-        {
-            treeggerService.sendTextMessage( jid, message );
-        }
-    }
     
     @Override
     public boolean onContextItemSelected( MenuItem menuItem )
