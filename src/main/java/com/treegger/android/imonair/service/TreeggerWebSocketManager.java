@@ -116,6 +116,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
                     {
                         connectionState = STATE_PAUSED;
                         LOCK.unlock();
+                        doPaused();
                     }
                     else
                     {
@@ -225,15 +226,18 @@ public class TreeggerWebSocketManager implements WSEventHandler
         try
         {
             if( wsConnector != null  ) wsConnector.close();
-            treeggerService.onPaused();
             applyTransition( TRANSITION_PAUSED );
         }
         catch ( IOException e )
         {
             Log.v(TAG, "Deactivate failed");
         }
-
     }
+    private void doPaused()
+    {
+        treeggerService.onPaused();
+    }
+
     private void doResume()
     {
         //treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Resume connection " + account.name + "@"+account.socialnetwork ) );
