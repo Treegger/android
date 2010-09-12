@@ -79,7 +79,7 @@ public class Chat
             if( treeggerService != null )
             {
                 TextView title = (TextView) findViewById( R.id.window_title );
-                title.setText( "IMonAir " + treeggerService.getConnectionStates() );
+                title.setText( getString(R.string.app_name)+" " + treeggerService.getConnectionStates() );
             }
         }
     }
