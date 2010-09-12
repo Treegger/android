@@ -50,7 +50,6 @@ public class AccountList
         Log.v( TAG, "Activity State: onResume()" );
         super.onResume();
 
-        final Intent intent = new Intent( this, AccountForm.class );
 
         final ListView lv = updateListView();
 
@@ -60,6 +59,7 @@ public class AccountList
             public void onItemClick( AdapterView<?> parent, View view, int position, long id )
             {
                 Account account = (Account)lv.getAdapter().getItem( position );
+                Intent intent = new Intent( view.getContext(), AccountForm.class );
                 intent.putExtra( AccountForm.EXTRA_ACCOUNT_ID, account.id );
                 
                 startActivity( intent );
@@ -76,8 +76,8 @@ public class AccountList
 
                 if ( adapterMenuInfo.position != lv.getAdapter().getCount() - 1 )
                 {
-                    menu.add( 0, CONTEXT_MENU_DELETE_ACCOUNT, 0, "Delete Account" );
-                    menu.add( 0, CONTEXT_MENU_CANCEL, 0, "Cancel" );
+                    menu.add( 0, CONTEXT_MENU_DELETE_ACCOUNT, 0, R.string.accountlist_delete );
+                    menu.add( 0, CONTEXT_MENU_CANCEL, 0, R.string.accountlist_cancel );
                 }
             }
         } );
@@ -98,7 +98,7 @@ public class AccountList
         {
             List<Account> accounts = treeggerService.getAccounts();
             Account addAccountItem = new Account();
-            addAccountItem.name = "Add account...";
+            addAccountItem.name = getString( R.string.accountlist_add );
             List<Account> adapterList = new ArrayList<Account>( accounts );
             adapterList.add( addAccountItem );
             lv.setAdapter( new AccountAdapter( this,  R.layout.accountline, adapterList ) );

@@ -54,6 +54,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private static final int TRANSITION_PAUSE = 3;
     private static final int TRANSITION_RECONNECT = 4;
     private static final int TRANSITION_DISCONNECT = 5;
+    private static final int TRANSITION_RESUME = 6;
     
     private static final Lock LOCK =  new ReentrantLock();
     
@@ -66,8 +67,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
         {
             case STATE_DISCONNECTED: return "offline";
             case STATE_CONNECTING: return "connecting";
-            case STATE_CONNECTED: return "online";
-            case STATE_PAUSED: return "sleep";
+            case STATE_CONNECTED: return "";
+            case STATE_PAUSED: return "standby";
             case STATE_DISCONNECTING: return "disconneting";
             case STATE_PAUSING: return "sleeping";
         }
@@ -123,12 +124,13 @@ public class TreeggerWebSocketManager implements WSEventHandler
                         doUnknownTransition();
                     }
                     break;
+                    
                 case TRANSITION_RECONNECT:
-                    if( connectionState == STATE_PAUSED )
+                    if( connectionState == STATE_DISCONNECTED )
                     {
                         connectionState = STATE_CONNECTING;
                         LOCK.unlock();
-                        doPauseReconnect();                    
+                        doConnect();
                     }
                     else if( connectionState == STATE_CONNECTING )
                     {
@@ -164,7 +166,14 @@ public class TreeggerWebSocketManager implements WSEventHandler
                         doUnknownTransition();
                     }
                     break;
-                    
+                case TRANSITION_RESUME:
+                    if( connectionState == STATE_PAUSED )
+                    {
+                        connectionState = STATE_CONNECTING;
+                        LOCK.unlock();
+                        doResume();                    
+                    }
+                    break;
                 default:
                    LOCK.unlock();
             }
@@ -218,9 +227,9 @@ public class TreeggerWebSocketManager implements WSEventHandler
         }
 
     }
-    private void doPauseReconnect()
+    private void doResume()
     {
-        treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Resume connection " + account.name + "@"+account.socialnetwork ) );
+        //treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Resume connection " + account.name + "@"+account.socialnetwork ) );
         doConnect();
     }
     private void doReconnect()
@@ -269,9 +278,13 @@ public class TreeggerWebSocketManager implements WSEventHandler
         applyTransition( TRANSITION_DISCONNECT );
     }
     
-    private void reconnect()
+    public void reconnect()
     {
         applyTransition( TRANSITION_RECONNECT );
+    }
+    private void resume()
+    {
+        applyTransition( TRANSITION_RESUME );
     }
 
     
@@ -404,7 +417,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
             }
             else if( lastActivity + PAUSE_DURATION < now && connectionState == STATE_PAUSED )
             {
-                connect();
+                resume();
             }
             else
             {

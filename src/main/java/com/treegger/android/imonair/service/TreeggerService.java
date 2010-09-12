@@ -98,8 +98,7 @@ public class TreeggerService
                 {
                     if( isFailover || networkChanged )
                     {
-                        disconnect();
-                        connect();
+                        reconnect();
                     }
                 }
                 
@@ -357,6 +356,14 @@ public class TreeggerService
         }
         //connectionMap.clear();
     }
+    public void reconnect()
+    {
+        for( TreeggerWebSocketManager webSocketManager : connectionMap.values() )
+        {
+            webSocketManager.reconnect();
+        }
+        //connectionMap.clear();
+    }
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
     private Account findAccountByJID( String jid )
@@ -483,11 +490,10 @@ public class TreeggerService
     public void onPaused()
     {
         broadcast( MESSAGE_TYPE_PAUSED );
-        handler.post( new DisplayToastRunnable( this, "Pause connection" ) );
+        //handler.post( new DisplayToastRunnable( this, "Pause connection" ) );
     }
     public void onDisconnected()
     {
-        //Toast.makeText( this, "Stopped", Toast.LENGTH_SHORT ).show();
     }
     
     
@@ -520,11 +526,13 @@ public class TreeggerService
             Notification notification = new Notification(android.R.drawable.stat_notify_chat, tickerText, when);
             
             Intent intent = new Intent( this, Chat.class );
+            intent.addFlags( Intent.FLAG_ACTIVITY_REORDER_TO_FRONT );
             intent.putExtra( Chat.EXTRA_ROSTER_JID, chatMessage.userAndHost );
 
             PendingIntent contentIntent = PendingIntent.getActivity( this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT );
             
-            notification.setLatestEventInfo(this, "IMonAir", chatMessage.text, contentIntent);
+            VCardResponse vcard = vcards.get( chatMessage.userAndHost );
+            notification.setLatestEventInfo(this, vcard.getFn(), chatMessage.text, contentIntent);
             notification.defaults |= Notification.DEFAULT_SOUND;
             
             notificationManager.notify( R.string.message_notification, notification);

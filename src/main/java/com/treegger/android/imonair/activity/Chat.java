@@ -51,7 +51,7 @@ public class Chat
     @Override
     public void onMessageType( int messageType )
     {
-        super.onMessageType( messageType );
+        //super.onMessageType( messageType );
         switch ( messageType )
         {
             case TreeggerService.MESSAGE_TYPE_TEXTMESSAGE_UPDATE:
@@ -101,7 +101,6 @@ public class Chat
         }
         
 
-        jid = getIntent().getStringExtra( EXTRA_ROSTER_JID );
         
         final TextView textInput = (TextView) findViewById( R.id.input_chat );
         textInput.setOnKeyListener( new OnKeyListener()
@@ -128,6 +127,8 @@ public class Chat
     {
         Log.v( TAG, "Activity State: onResume()" );
         super.onResume();
+
+        jid = getIntent().getStringExtra( EXTRA_ROSTER_JID );
         if( treeggerService != null )
         {
             treeggerService.setVisibleChat( jid );
@@ -271,6 +272,7 @@ public class Chat
                 
                 TextView label = (TextView)adapterMenuInfo.targetView.findViewById( R.id.message );
                 
+                // ((ht|f)tp(s?)://)?(([a-z0-9]([a-z0-9]|-)*[a-z0-9]|[a-z0-9])\.)+([a-z]([a-z0-9]|-)*[a-z0-9]|[a-z])(/([a-z0-9\.!$&'\(\)*+,;=_~:@-]|%[a-f0-9]{2})*)*(\?[a-z0-9\.!$&'\(\)*+,;=_~:@/?-]*)?(\#[a-z0-9\.!$&'\(\)*+,;=_~:@/?-]*)?
                 Pattern pattern = Pattern.compile("\\b((http[s]?://|www\\.)\\S+)\\b");
                 Matcher matcher = pattern.matcher( label.getText().toString() );
                 int i = 0;
@@ -324,7 +326,7 @@ public class Chat
                 VCardResponse vcard = treeggerService.vcards.get( jid );
                 if ( vcard != null && vcard.hasPhotoExternal() )
                 {
-                    ImageLoader.load( image, vcard.getPhotoExternal() );
+                    ImageLoader.load( getContext(), image, vcard.getPhotoExternal() );
                 }
             }
         }

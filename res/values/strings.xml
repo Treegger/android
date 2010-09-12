@@ -9,7 +9,10 @@
     <string name="form_name">Name</string>
     <string name="form_socialnetwork">Social Network</string>
     <string name="form_password">Password</string>
-    
+
+    <string name="accountlist_delete">Delete Account</string>
+    <string name="accountlist_cancel">Cancel</string>
+    <string name="accountlist_add">Add account...</string>
     
     <string name="button_cancel">Cancel</string>
     <string name="button_add">Add</string>
@@ -21,6 +24,8 @@
 
     <string name="dialog_connection">Connection...</string>
     <string name="dialog_authentication">Authentication...</string>
+    
+    
     
     <string-array name="presenceType">
     	<item>Available</item>

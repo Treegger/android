@@ -31,7 +31,7 @@ import com.treegger.protobuf.WebSocketProto.VCardResponse;
 public class RostersView
     extends TreeggerActivity
 {
-    public static final String TAG = "AndroIM";
+    public static final String TAG = "RosterView";
 
     @Override
     public void onMessageType( int messageType )
@@ -139,6 +139,7 @@ public class RostersView
                 
                 RosterItem rosterItem = (RosterItem) parent.getAdapter().getItem( position );
                 Intent intent = new Intent( parent.getContext(), Chat.class );
+                intent.addFlags( Intent.FLAG_ACTIVITY_REORDER_TO_FRONT );
                 intent.putExtra( Chat.EXTRA_ROSTER_JID, rosterItem.getJid() );
                 startActivity( intent );
             }
@@ -200,7 +201,8 @@ public class RostersView
                     treeggerService.sendPresence( "unavailable", "", "" );
                     treeggerService.disconnect();
                 }                
-                System.exit( 0 );
+
+                finish();
                 return true;
         }
         return false;
@@ -249,7 +251,7 @@ public class RostersView
                 VCardResponse vcard = treeggerService.vcards.get( jid );
                 if ( vcard != null && vcard.hasPhotoExternal() )
                 {
-                    ImageLoader.load( image, vcard.getPhotoExternal() );
+                    ImageLoader.load( getContext(), image, vcard.getPhotoExternal() );
                 }
             }
         }

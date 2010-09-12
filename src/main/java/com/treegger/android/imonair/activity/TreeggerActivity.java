@@ -142,9 +142,9 @@ public abstract class TreeggerActivity extends Activity {
         switch( dialogType )
         {
             case TreeggerService.MESSAGE_TYPE_CONNECTING:
-                return buildDialog( null, getText(R.string.dialog_connection).toString() );
+                return buildDialog( null, getString( R.string.dialog_connection) );
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING:
-                return buildDialog( null, getText(R.string.dialog_authentication).toString() );
+                return buildDialog( null, getString(R.string.dialog_authentication) );
         }
         return null;
     }
