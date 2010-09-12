@@ -200,6 +200,7 @@ public class RostersView
                 {
                     treeggerService.sendPresence( "unavailable", "", "" );
                     treeggerService.disconnect();
+                    treeggerService.stopSelf();
                 }                
 
                 finish();
