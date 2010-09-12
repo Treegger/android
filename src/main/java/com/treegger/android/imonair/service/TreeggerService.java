@@ -53,6 +53,7 @@ public class TreeggerService
     public static final int     MESSAGE_TYPE_AUTHENTICATING = 6;
     public static final int     MESSAGE_TYPE_AUTHENTICATING_FINISHED = 7;
     public static final int     MESSAGE_TYPE_PAUSED = 8;
+    public static final int     MESSAGE_TYPE_DISCONNECTED = 9;
     
     private static final int MAX_MESSAGESLIST_SIZE = 100;
     
@@ -327,14 +328,38 @@ public class TreeggerService
         }        
     }
 
+    private int getConnectionState( Account account )
+    {
+        TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
+        return webSocketManager.getState();
+    }
+    public String getConnectionStateName( Account account )
+    {
+        switch( getConnectionState(account) )
+        {
+            case TreeggerWebSocketManager.STATE_DISCONNECTED:
+                return getString( R.string.state_disconnected );
+            case TreeggerWebSocketManager.STATE_CONNECTING:
+                return getString( R.string.state_connecting );
+            case TreeggerWebSocketManager.STATE_CONNECTED:
+                return getString( R.string.state_connected );
+            case TreeggerWebSocketManager.STATE_PAUSED:
+                return getString( R.string.state_paused );
+            case TreeggerWebSocketManager.STATE_DISCONNECTING:
+                return getString( R.string.state_disconnecting );
+            case TreeggerWebSocketManager.STATE_PAUSING:
+                return getString( R.string.state_pausing );
+            default:
+                return "";
+        }
+    }
     public String getConnectionStates()
     {
         String states = ""; 
         for( Account account : getAccounts() )
         {
             if( states.length()>0) states+= " - ";
-            TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
-            states += webSocketManager.getStateName();
+            states += getConnectionStateName( account );
         }
         if( states.length() > 0 ) return "("+states+")";
         else return "";
@@ -450,8 +475,7 @@ public class TreeggerService
         accountStorage.updateAccount( account );
         TreeggerWebSocketManager webSocketManager = connectionMap.remove( account );
         removeRoster( account );
-        webSocketManager.disconnect();
-        webSocketManager.connect();
+        webSocketManager.reconnect();
 
         connectionMap.put( account, new TreeggerWebSocketManager( this, account ) );
     }
@@ -494,6 +518,7 @@ public class TreeggerService
     }
     public void onDisconnected()
     {
+        broadcast( MESSAGE_TYPE_DISCONNECTED );
     }
     
     
