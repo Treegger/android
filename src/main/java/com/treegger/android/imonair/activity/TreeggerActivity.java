@@ -54,16 +54,18 @@ public abstract class TreeggerActivity extends Activity {
         }
     };
     
-    protected int currentDialog;
+    protected int currentDialog = 0;
     public void onMessageType( int messageType )
     {
         switch( messageType )
         {
             case TreeggerService.MESSAGE_TYPE_CONNECTING:
+                if( currentDialog != 0 ) removeDialog( currentDialog ); 
                 currentDialog = TreeggerService.MESSAGE_TYPE_CONNECTING; 
                 showDialog( currentDialog );
                 break;
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING:
+                if( currentDialog != 0 ) removeDialog( currentDialog );
                 currentDialog = TreeggerService.MESSAGE_TYPE_AUTHENTICATING; 
                 showDialog( currentDialog );
                 break;
@@ -72,6 +74,8 @@ public abstract class TreeggerActivity extends Activity {
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING_FINISHED:
             case TreeggerService.MESSAGE_TYPE_DISCONNECTED:
                 removeDialog( currentDialog );
+                currentDialog = 0;
+                break;
             
             case TreeggerService.MESSAGE_TYPE_PAUSED:
                 break;
