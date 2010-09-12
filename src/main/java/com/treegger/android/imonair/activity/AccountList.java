@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +22,7 @@ import android.widget.AdapterView.OnItemClickListener;
 
 import com.treegger.android.imonair.R;
 import com.treegger.android.imonair.service.Account;
+import com.treegger.android.imonair.service.TreeggerService;
 
 public class AccountList
     extends TreeggerActivity
@@ -34,6 +34,15 @@ public class AccountList
 
     private static final int CONTEXT_MENU_CANCEL = 2;
 
+    
+    @Override
+    public void onMessageType( int messageType )
+    {
+        super.onMessageType( messageType );
+        updateListView();
+    }
+
+    
     @Override
     public void onCreate( Bundle savedInstanceState )
     {
@@ -91,17 +100,38 @@ public class AccountList
         updateListView();
     }
 
+    
+    private List<Account> adapterList;
+    
     private ListView updateListView()
     {
         ListView lv = (ListView) findViewById( R.id.accounts_list );
         if ( treeggerService != null )
         {
+            AccountAdapter accountAdapter = (AccountAdapter)lv.getAdapter();
             List<Account> accounts = treeggerService.getAccounts();
-            Account addAccountItem = new Account();
-            addAccountItem.name = getString( R.string.accountlist_add );
-            List<Account> adapterList = new ArrayList<Account>( accounts );
-            adapterList.add( addAccountItem );
-            lv.setAdapter( new AccountAdapter( this,  R.layout.accountline, adapterList ) );
+            if( accountAdapter == null )
+            {
+                adapterList = new ArrayList<Account>( accounts );
+                Account addAccountItem = new Account();
+                adapterList.add( addAccountItem );
+                
+                addAccountItem.name = getString( R.string.accountlist_add );
+                accountAdapter = new AccountAdapter( this,  R.layout.accountline, adapterList );
+                lv.setAdapter( accountAdapter );
+            }
+            else
+            {
+                for( Account account : accounts )
+                {
+                    if( !adapterList.contains( account ) )
+                    {
+                        accountAdapter.insert( account, accountAdapter.getCount()-1 );
+                    }
+                }
+            }
+            
+            accountAdapter.notifyDataSetChanged();
         }
         return lv;
     }
@@ -116,8 +146,13 @@ public class AccountList
         {
             case CONTEXT_MENU_DELETE_ACCOUNT:
                 ListView lv = (ListView) findViewById( R.id.accounts_list );
-                Account account = (Account)lv.getAdapter().getItem( menuInfo.position );
-                if( account.socialnetwork != null ) treeggerService.removeAccount( account );
+                AccountAdapter accountAdapter = (AccountAdapter)lv.getAdapter();
+                Account account = accountAdapter.getItem( menuInfo.position );
+                if( account.socialnetwork != null )
+                {
+                    accountAdapter.remove( account );
+                    treeggerService.removeAccount( account );
+                }
                 updateListView();
                 return true;
         }
@@ -136,18 +171,23 @@ public class AccountList
         @Override
         public View getView( int position, View convertView, ViewGroup parent )
         {
-            LayoutInflater inflater = getLayoutInflater();
-            View row = inflater.inflate( R.layout.accountline, parent, false );
+            View row = getLayoutInflater().inflate( R.layout.accountline, parent, false );
             row.setBackgroundColor( 0xff222222 );
-            TextView label = (TextView) row.findViewById( R.id.label );
             
+            TextView label = (TextView) row.findViewById( R.id.label );
             Account account = getItem( position );
             String text = account.name;
             if( account.socialnetwork != null ) text += "@" + getItem( position ).socialnetwork.toLowerCase();
             label.setTextColor( 0xffffffff );
             label.setText( text );
 
-            //ImageView icon=(ImageView)row.findViewById(R.id.icon);
+            if( treeggerService != null && account.socialnetwork != null  )
+            {
+                TextView status = (TextView) row.findViewById( R.id.status );
+                String statusStr = treeggerService.getConnectionStateName( account );
+                if( statusStr != null ) status.setText( statusStr );
+            }
+            
             return row;
         }
     }
