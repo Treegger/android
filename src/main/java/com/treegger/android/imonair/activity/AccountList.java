@@ -22,7 +22,6 @@ import android.widget.AdapterView.OnItemClickListener;
 
 import com.treegger.android.imonair.R;
 import com.treegger.android.imonair.service.Account;
-import com.treegger.android.imonair.service.TreeggerService;
 
 public class AccountList
     extends TreeggerActivity

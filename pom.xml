@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.treegger.android</groupId>
 	<artifactId>imonair</artifactId>
-	<version>1.0</version>
+	<version>1.0.1</version>
 	<packaging>apk</packaging>
 	<name>Treegger IMonAir Android</name>
 
@@ -31,6 +31,8 @@
 		</dependency>
 	</dependencies>
 
+    
+    
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<plugins>
@@ -53,6 +55,46 @@
 					<target>1.5</target>
 				</configuration>
 			</plugin>
+			
+			
+			
+			<plugin>
+			     <groupId>org.apache.maven.plugins</groupId>
+			     <artifactId>maven-jarsigner-plugin</artifactId>
+			     <version>1.2</version>
+			     <executions>
+			         <execution>
+			             <id>signing</id>
+			             <goals>
+			                 <goal>sign</goal>
+			             </goals>
+			             <phase>package</phase>
+			             <inherited>true</inherited>
+			             <configuration>
+			                 <archiveDirectory></archiveDirectory>
+			                 <includes>
+			                     <include>target/*.apk</include>
+			                 </includes>
+			                 <keystore>${imonair.android.keystore.path}</keystore>
+			                 <storepass>${imonair.android.keystore.storepass}</storepass>
+			                 <keypass>${imonair.android.keystore.keypass}</keypass>
+			                 <alias>${imonair.android.keystore.alias}</alias>
+			             </configuration>
+			         </execution>
+			     </executions>
+			 </plugin>
+			 <plugin>
+			     <groupId>com.jayway.maven.plugins.android.generation2</groupId>
+			     <artifactId>maven-android-plugin</artifactId>
+			     <inherited>true</inherited>
+			     <configuration>
+			         <sign>
+			             <debug>false</debug>
+			         </sign>
+			     </configuration>
+			 </plugin>
+			
+			
 		</plugins>
 	</build>
 </project>

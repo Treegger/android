@@ -99,8 +99,8 @@ public abstract class TreeggerActivity extends Activity {
     public void onResume()
     {
         super.onResume();
-        updateTitle();
         registerReceiver( receiver, new IntentFilter( TreeggerService.TREEGGER_BROADCAST_ACTION ) );
+        updateTitle();
     }
 
     @Override

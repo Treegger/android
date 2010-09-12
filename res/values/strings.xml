@@ -25,6 +25,14 @@
     <string name="dialog_connection">Connection...</string>
     <string name="dialog_authentication">Authentication...</string>
     
+    <string name="state_disconnected">offline</string>
+    <string name="state_connecting">connecting</string>
+    <string name="state_connected">online</string>
+    <string name="state_paused">standby</string>
+    <string name="state_disconnecting"></string>
+    <string name="state_pausing"></string>
+    
+    
     
     
     <string-array name="presenceType">
