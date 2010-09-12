@@ -54,23 +54,25 @@ public abstract class TreeggerActivity extends Activity {
         }
     };
     
+    protected int currentDialog;
     public void onMessageType( int messageType )
     {
         switch( messageType )
         {
             case TreeggerService.MESSAGE_TYPE_CONNECTING:
-                showDialog(TreeggerService.MESSAGE_TYPE_CONNECTING);
-                break;
-            case TreeggerService.MESSAGE_TYPE_CONNECTING_FINISHED:
-                getWindow().setTitle( "IMonAir" );
-                removeDialog( TreeggerService.MESSAGE_TYPE_CONNECTING);
+                currentDialog = TreeggerService.MESSAGE_TYPE_CONNECTING; 
+                showDialog( currentDialog );
                 break;
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING:
-                showDialog(TreeggerService.MESSAGE_TYPE_AUTHENTICATING);
+                currentDialog = TreeggerService.MESSAGE_TYPE_AUTHENTICATING; 
+                showDialog( currentDialog );
                 break;
+
+            case TreeggerService.MESSAGE_TYPE_CONNECTING_FINISHED:
             case TreeggerService.MESSAGE_TYPE_AUTHENTICATING_FINISHED:
-                removeDialog( TreeggerService.MESSAGE_TYPE_AUTHENTICATING);
-                break;
+            case TreeggerService.MESSAGE_TYPE_DISCONNECTED:
+                removeDialog( currentDialog );
+            
             case TreeggerService.MESSAGE_TYPE_PAUSED:
                 break;
         }
@@ -79,7 +81,7 @@ public abstract class TreeggerActivity extends Activity {
    
     public void updateTitle()
     {
-        if( treeggerService != null ) getWindow().setTitle( "IMonAir " + treeggerService.getConnectionStates() );
+        if( treeggerService != null ) getWindow().setTitle( getString( R.string.app_name )+" " + treeggerService.getConnectionStates() );
     }
     
     @Override
