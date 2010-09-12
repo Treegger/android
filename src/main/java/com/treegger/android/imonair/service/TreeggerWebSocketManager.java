@@ -40,6 +40,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
     public static final String DEFAULT_RESOURCE = "AndroidIMonAir";
     
     public boolean authenticated = false;
+    public boolean autoAway = false;
+    
     private String fromJID;
     
     public static final int STATE_DISCONNECTED = 0;
@@ -241,7 +243,14 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private void doResume()
     {
         //treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Resume connection " + account.name + "@"+account.socialnetwork ) );
-        doConnect();
+        try
+        {
+           if( wsConnector != null ) wsConnector.connect( "wss", "xmpp.treegger.com", 443, "/tg-1.0", true, this );
+        }
+        catch ( IOException e )
+        {
+            Log.v(TAG, "Resume failed");
+        }
     }
     private void doReconnect()
     {
@@ -342,6 +351,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         if( authenticated )
         {
+            if( autoAway ) setAsAvailable();
+            
             lastActivity = System.currentTimeMillis();
     
             WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
@@ -357,6 +368,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         if( authenticated )
         {
+            if( autoAway ) setAsAvailable();
+            
             lastActivity = System.currentTimeMillis();
             WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
             TextMessage.Builder textMessage = TextMessage.newBuilder();
@@ -418,10 +431,11 @@ public class TreeggerWebSocketManager implements WSEventHandler
 
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
+    private final static long PAUSE_DELAY = 60*1000;
+    private final static long PAUSE_DURATION = 5*60*1000;
+    
     class PingTask extends TimerTask 
     {
-        private final static long PAUSE_DELAY = 60*1000;
-        private final static long PAUSE_DURATION = 5*60*1000;
         
         public void run() 
         {
@@ -467,11 +481,23 @@ public class TreeggerWebSocketManager implements WSEventHandler
         applyTransition( TRANSITION_CONNECTED );
         
     }
-    
+    private void setAsAvailable()
+    {
+        autoAway = false;
+        sendPresence( "", "", "" );        
+    }
     private void postAuthentication()
     {
         authenticated = true;
-        sendPresence( "", "", "" );
+        long now = System.currentTimeMillis();
+        if( lastActivity + PAUSE_DURATION < now ) 
+        {
+            autoAway = true;
+        }
+        else
+        {
+            setAsAvailable();
+        }
         flushLaterWebSocketMessageQueue();
     }
     
