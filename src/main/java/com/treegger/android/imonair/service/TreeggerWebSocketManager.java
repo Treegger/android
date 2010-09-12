@@ -42,37 +42,29 @@ public class TreeggerWebSocketManager implements WSEventHandler
     public boolean authenticated = false;
     private String fromJID;
     
-    private static final int STATE_DISCONNECTED = 0;
-    private static final int STATE_CONNECTING = 1;
-    private static final int STATE_CONNECTED = 2;
-    private static final int STATE_PAUSED = 3;
-    private static final int STATE_DISCONNECTING = 4;
-    private static final int STATE_PAUSING = 5;
+    public static final int STATE_DISCONNECTED = 0;
+    public static final int STATE_CONNECTING = 1;
+    public static final int STATE_CONNECTED = 2;
+    public static final int STATE_PAUSED = 3;
+    public static final int STATE_DISCONNECTING = 4;
+    public static final int STATE_PAUSING = 5;
     
     private static final int TRANSITION_CONNECT = 1;
     private static final int TRANSITION_CONNECTED = 2;
     private static final int TRANSITION_PAUSE = 3;
+    private static final int TRANSITION_PAUSED = 31;
     private static final int TRANSITION_RECONNECT = 4;
     private static final int TRANSITION_DISCONNECT = 5;
+    private static final int TRANSITION_DISCONNECTED = 51;
     private static final int TRANSITION_RESUME = 6;
     
     private static final Lock LOCK =  new ReentrantLock();
     
     private int connectionState = STATE_DISCONNECTED;
     
-    // should be localized?
-    public String getStateName()
+    public int getState()
     {
-        switch( connectionState )
-        {
-            case STATE_DISCONNECTED: return "offline";
-            case STATE_CONNECTING: return "connecting";
-            case STATE_CONNECTED: return "";
-            case STATE_PAUSED: return "standby";
-            case STATE_DISCONNECTING: return "disconneting";
-            case STATE_PAUSING: return "sleeping";
-        }
-        return "";
+        return connectionState;
     }
     
     private void applyTransition( int transition )
@@ -92,7 +84,6 @@ public class TreeggerWebSocketManager implements WSEventHandler
                     else
                     {
                         LOCK.unlock();
-                        doUnknownTransition();
                     }
                     break;
                 case TRANSITION_CONNECTED:
@@ -105,7 +96,6 @@ public class TreeggerWebSocketManager implements WSEventHandler
                     else
                     {
                         LOCK.unlock();
-                        doUnknownTransition();
                     }
                     break;
                 case TRANSITION_PAUSE:
@@ -114,16 +104,25 @@ public class TreeggerWebSocketManager implements WSEventHandler
                         connectionState = STATE_PAUSING;
                         LOCK.unlock();
                         doPause();
-                        LOCK.lockInterruptibly();
+                    }
+                    else
+                    {
+                        LOCK.unlock();
+                    }
+                    break;
+                    
+                case TRANSITION_PAUSED:
+                    if( connectionState == STATE_PAUSING )
+                    {
                         connectionState = STATE_PAUSED;
                         LOCK.unlock();
                     }
                     else
                     {
                         LOCK.unlock();
-                        doUnknownTransition();
                     }
                     break;
+                    
                     
                 case TRANSITION_RECONNECT:
                     if( connectionState == STATE_DISCONNECTED )
@@ -136,7 +135,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
                     {
                         connectionState = STATE_CONNECTING;
                         LOCK.unlock();
-                        doConnect();
+                        doReconnect();
                     }
                     else if( connectionState == STATE_CONNECTED )
                     {
@@ -147,7 +146,6 @@ public class TreeggerWebSocketManager implements WSEventHandler
                     else
                     {
                         LOCK.unlock();
-                        doUnknownTransition();
                     }
                     break;
                 case TRANSITION_DISCONNECT:
@@ -156,22 +154,35 @@ public class TreeggerWebSocketManager implements WSEventHandler
                         connectionState = STATE_DISCONNECTING;
                         LOCK.unlock();
                         doDisconnect();
-                        LOCK.lockInterruptibly();
-                        connectionState = STATE_DISCONNECTED;
-                        LOCK.unlock();
                     }
                     else
                     {
                         LOCK.unlock();
-                        doUnknownTransition();
                     }
                     break;
+                case TRANSITION_DISCONNECTED:
+                    if( connectionState == STATE_DISCONNECTING )
+                    {
+                        connectionState = STATE_DISCONNECTED;
+                        LOCK.unlock();
+                        doDisconnected();
+                    }
+                    else
+                    {
+                        LOCK.unlock();
+                    }
+                    break;
+                    
                 case TRANSITION_RESUME:
                     if( connectionState == STATE_PAUSED )
                     {
                         connectionState = STATE_CONNECTING;
                         LOCK.unlock();
                         doResume();                    
+                    }
+                    else
+                    {
+                        LOCK.unlock();
                     }
                     break;
                 default:
@@ -182,11 +193,6 @@ public class TreeggerWebSocketManager implements WSEventHandler
         {
             Log.e( TAG, e.getMessage(), e );
         }
-    }
-    
-    private void doUnknownTransition()
-    {
-        
     }
     
     private void doConnect()
@@ -220,6 +226,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
         {
             if( wsConnector != null  ) wsConnector.close();
             treeggerService.onPaused();
+            applyTransition( TRANSITION_PAUSED );
         }
         catch ( IOException e )
         {
@@ -245,13 +252,17 @@ public class TreeggerWebSocketManager implements WSEventHandler
             if( timer != null ) timer.cancel();
             timer = null;
             if( wsConnector != null ) wsConnector.close();
-            treeggerService.onDisconnected();
+            applyTransition( TRANSITION_DISCONNECTED );
         }
         catch ( IOException e )
         {
             Log.v(TAG, "Disconnection failed");
         }
         
+    }
+    private void doDisconnected()
+    {
+        treeggerService.onDisconnected();
     }
     
     
@@ -482,6 +493,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
                 else
                 {
                     treeggerService.handler.post( new DisplayToastRunnable( treeggerService, "Authentication failure for account: " + account.name + "@"+account.socialnetwork ) );
+                    disconnect();
                 }
 
             }
