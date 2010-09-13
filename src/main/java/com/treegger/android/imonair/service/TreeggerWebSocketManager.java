@@ -40,7 +40,6 @@ public class TreeggerWebSocketManager implements WSEventHandler
     public static final String DEFAULT_RESOURCE = "AndroidIMonAir";
     
     public boolean authenticated = false;
-    public boolean autoAway = false;
     
     private String fromJID;
     
@@ -351,7 +350,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         if( authenticated )
         {
-            if( autoAway ) setAsAvailable();
+            wakeup();
             
             lastActivity = System.currentTimeMillis();
     
@@ -368,8 +367,6 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         if( authenticated )
         {
-            if( autoAway ) setAsAvailable();
-            
             lastActivity = System.currentTimeMillis();
             WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
             TextMessage.Builder textMessage = TextMessage.newBuilder();
@@ -429,11 +426,28 @@ public class TreeggerWebSocketManager implements WSEventHandler
         }
     }
 
+    
+    
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
     private final static long PAUSE_DELAY = 60*1000;
     private final static long PAUSE_DURATION = 5*60*1000;
     
+    private boolean sleeping = false;
+    private void sleep()
+    {
+        sendPresence( "", "away", "" );
+        sleeping = true;
+    }
+    private void wakeup()
+    {
+        if( sleeping )
+        {
+            sleeping = false;
+            sendPresence( "", "", "" );
+        }
+    }
+
     class PingTask extends TimerTask 
     {
         
@@ -442,6 +456,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
             long now = System.currentTimeMillis();
             if( lastActivity + PAUSE_DELAY < now && connectionState == STATE_CONNECTED )
             {
+                sleep();
                 pause();
             }
             else if( lastActivity + PAUSE_DURATION < now && connectionState == STATE_PAUSED )
@@ -481,23 +496,11 @@ public class TreeggerWebSocketManager implements WSEventHandler
         applyTransition( TRANSITION_CONNECTED );
         
     }
-    private void setAsAvailable()
-    {
-        autoAway = false;
-        sendPresence( "", "", "" );        
-    }
+
     private void postAuthentication()
     {
         authenticated = true;
-        long now = System.currentTimeMillis();
-        if( lastActivity + PAUSE_DURATION < now ) 
-        {
-            autoAway = true;
-        }
-        else
-        {
-            setAsAvailable();
-        }
+        if( !sleeping ) sendPresence( "", "", "" );
         flushLaterWebSocketMessageQueue();
     }
     

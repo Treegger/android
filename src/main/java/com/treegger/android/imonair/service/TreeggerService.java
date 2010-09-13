@@ -92,7 +92,7 @@ public class TreeggerService
                 
                 if( noConnectivity )
                 {
-                    disconnect();
+                    //disconnect();
                     prevNetworkType = NO_NETWORK;
                 } 
                 else 
@@ -331,7 +331,10 @@ public class TreeggerService
     private int getConnectionState( Account account )
     {
         TreeggerWebSocketManager webSocketManager = connectionMap.get( account );
-        return webSocketManager.getState();
+        if( webSocketManager != null ) 
+            return webSocketManager.getState();
+        else 
+            return TreeggerWebSocketManager.STATE_DISCONNECTED;
     }
     public String getConnectionStateName( Account account )
     {
@@ -368,9 +371,8 @@ public class TreeggerService
     @Override
     public void onDestroy()
     {
-        sendPresence( "unavailable", "", "" );
+        cleanup();
         unregisterReceiver( receiver );
-        disconnect();
     }
 
     public void disconnect()
@@ -388,6 +390,19 @@ public class TreeggerService
             webSocketManager.reconnect();
         }
         //connectionMap.clear();
+    }
+    
+    public void cleanup()
+    {
+        sendPresence( "unavailable", "", "" );
+        disconnect();
+        messageComposingMap.clear();
+        presenceMap.clear();
+        rosterMap.clear();
+        rosterItemsList.clear();
+        vcards.clear();
+        textMessageMap.clear();
+        connectionMap.clear();
     }
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------

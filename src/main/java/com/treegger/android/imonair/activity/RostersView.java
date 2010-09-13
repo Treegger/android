@@ -198,9 +198,9 @@ public class RostersView
             case R.id.menu_sign_out:
                 if ( treeggerService != null )
                 {
-                    treeggerService.sendPresence( "unavailable", "", "" );
-                    treeggerService.disconnect();
+                    treeggerService.cleanup();
                     treeggerService.stopSelf();
+                    System.exit( 0 );
                 }                
 
                 finish();

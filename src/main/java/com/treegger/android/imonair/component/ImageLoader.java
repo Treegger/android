@@ -113,20 +113,25 @@ public class ImageLoader
             {
                 out.write( b, 0, read );
             }
+            
+            boolean ex = false;
             try
             {
                 in.close();
             }
             catch ( IOException e )
             {
+                ex = true;
             }
             try
             {
                 in.close();
             }
-            catch ( IOException ee )
+            catch ( IOException e )
             {
+                ex = true;
             }
+            if( ex ) throw new IOException();
         }
 
         private void cacheURLToFile( String urlStr, File file )
@@ -155,10 +160,9 @@ public class ImageLoader
 
         private void fetch( ImageHandler handler )
         {
+            File file = getFile( handler );
             try
             {
-
-                File file = getFile( handler );
                 if ( file.exists() )
                 {
                     backgroundQueue.add( handler );
@@ -177,15 +181,16 @@ public class ImageLoader
             }
             catch ( Exception e )
             {
-                e.printStackTrace();
+                file.delete();
+                imageMap.remove( handler.url );
             }
         }
 
         private void backgroundFetch( ImageHandler handler )
         {
+            File file = getFile( handler );
             try
             {
-                File file = getFile( handler );
 
                 WifiManager wifi = (WifiManager) handler.image.getContext().getSystemService( Context.WIFI_SERVICE );
                 if ( wifi.isWifiEnabled() )
@@ -197,7 +202,7 @@ public class ImageLoader
             }
             catch ( Exception e )
             {
-                e.printStackTrace();
+                file.delete();
             }
         }
     }

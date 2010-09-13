@@ -13,6 +13,7 @@ public class IMonAirApp extends Application
 
     private ServiceConnection onService = new ServiceConnection()
     {
+
         public void onServiceConnected( ComponentName className, IBinder rawBinder )
         {
         }
