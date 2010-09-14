@@ -138,6 +138,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
                     {
                         connectionState = STATE_CONNECTING;
                         LOCK.unlock();
+                        treeggerService.onConnectingFinished();
                         doReconnect();
                     }
                     else if( connectionState == STATE_CONNECTED )
@@ -158,7 +159,14 @@ public class TreeggerWebSocketManager implements WSEventHandler
                     }
                     break;
                 case TRANSITION_DISCONNECT:
-                    if( connectionState == STATE_PAUSED || connectionState == STATE_CONNECTED || connectionState == STATE_CONNECTING )
+                    if( connectionState == STATE_CONNECTING )
+                    {
+                        connectionState = STATE_DISCONNECTING;
+                        LOCK.unlock();
+                        treeggerService.onConnectingFinished();
+                        doDisconnect();
+                    }
+                    else if( connectionState == STATE_PAUSED || connectionState == STATE_CONNECTED )
                     {
                         connectionState = STATE_DISCONNECTING;
                         LOCK.unlock();
