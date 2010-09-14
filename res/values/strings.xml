@@ -29,8 +29,9 @@
     <string name="state_connecting">connecting</string>
     <string name="state_connected">online</string>
     <string name="state_paused">standby</string>
-    <string name="state_disconnecting"></string>
-    <string name="state_pausing"></string>
+    <string name="state_disconnecting">disconnecting</string>
+    <string name="state_pausing">going off</string>
+    <string name="state_error">error</string>
     
     
     

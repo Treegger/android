@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">IMonAir</string>
+
+	<string name="message_notification">IMonAir</string>
+	
+	<string name="presence_bar">Precence status</string>
+    
+    <string name="form_name">Nom</string>
+    <string name="form_socialnetwork">Réseau social</string>
+    <string name="form_password">Mot de passe</string>
+
+    <string name="accountlist_delete">Supprimer compte</string>
+    <string name="accountlist_cancel">Annuler</string>
+    <string name="accountlist_add">Ajouter un compte...</string>
+    
+    <string name="button_cancel">Annuler</string>
+    <string name="button_add">Ajouter</string>
+    <string name="button_update">Modifier</string>
+    <string name="button_send">Envoyer</string>
+    
+    <string name="menu_accounts">Comptes</string>
+    <string name="menu_sign_out">Deconnexion</string>
+
+    <string name="dialog_connection">Connexion...</string>
+    <string name="dialog_authentication">Authentification...</string>
+    
+    <string name="state_disconnected">offline</string>
+    <string name="state_connecting">connexion</string>
+    <string name="state_connected">connecté</string>
+    <string name="state_paused">veille</string>
+    <string name="state_disconnecting">deconnexion</string>
+    <string name="state_pausing">mise en veille</string>
+    <string name="state_error">erreur</string>
+    
+    
+    
+    
+    <string-array name="presenceType">
+    	<item>Disponible</item>
+    	<item>Ne pas déranger</item>
+    	<item>Parti</item>
+    </string-array>
+</resources>
