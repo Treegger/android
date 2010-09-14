@@ -500,7 +500,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private void postAuthentication()
     {
         authenticated = true;
-        if( !sleeping ) sendPresence( "", "", "" );
+        if( sleeping ) sendPresence( "", "away", "" );
+        else sendPresence( "", "", "" );
         flushLaterWebSocketMessageQueue();
     }
     
