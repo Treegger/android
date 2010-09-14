@@ -353,7 +353,7 @@ public class TreeggerService
             case TreeggerWebSocketManager.STATE_PAUSING:
                 return getString( R.string.state_pausing );
             default:
-                return "";
+                return getString( R.string.state_error );
         }
     }
     public String getConnectionStates()
