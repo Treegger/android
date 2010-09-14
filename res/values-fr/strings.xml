@@ -4,13 +4,13 @@
 
 	<string name="message_notification">IMonAir</string>
 	
-	<string name="presence_bar">Precence status</string>
+	<string name="presence_bar">Présence</string>
     
     <string name="form_name">Nom</string>
     <string name="form_socialnetwork">Réseau social</string>
     <string name="form_password">Mot de passe</string>
 
-    <string name="accountlist_delete">Supprimer compte</string>
+    <string name="accountlist_delete">Supprimer</string>
     <string name="accountlist_cancel">Annuler</string>
     <string name="accountlist_add">Ajouter un compte...</string>
     
