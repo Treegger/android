@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.URL;
+import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.HashMap;
@@ -88,13 +89,7 @@ public class ImageLoader
                 handler = urlQueue.poll();
                 if( handler == null )
                 {
-                    try
-                    {
-                        sleep(10);
-                    }
-                    catch ( InterruptedException e )
-                    {
-                    }
+                    yield();
                     handler = backgroundQueue.poll();
                     if( handler != null )
                         backgroundFetch( handler );
@@ -138,7 +133,10 @@ public class ImageLoader
             throws FileNotFoundException, IOException
         {
             URL url = new URL( urlStr );
-            copy( url.openConnection().getInputStream(), new FileOutputStream( file ) );
+            URLConnection connection = url.openConnection();
+            connection.setConnectTimeout( 5*1000 );
+            connection.setReadTimeout( 5*1000 );
+            copy( connection.getInputStream(), new FileOutputStream( file ) );
         }
 
         private File getFile( ImageHandler handler )
