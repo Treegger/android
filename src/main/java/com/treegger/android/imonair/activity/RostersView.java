@@ -1,7 +1,9 @@
 package com.treegger.android.imonair.activity;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.content.Context;
 import android.content.Intent;
@@ -222,23 +224,37 @@ public class RostersView
             super( context, textViewResourceId, rosterItems );
         }
 
+        
         public void sort()
         {
             super.sort( new Comparator<RosterItem>()
             {
+                private Map<String,Integer> presences = new HashMap<String,Integer>();
+                
+                private int getCachedPresence( String jid )
+                {
+                    Integer type = presences.get( jid );
+                    if( type == null )
+                    {
+                        type = getPresenceType( jid );
+                        presences.put( jid, type );
+                    }
+                    return type;
+                }
+                
                 @Override
                 public int compare( RosterItem item1, RosterItem item2 )
                 {
-                    int presentType1 = getPresenceType( item1.getJid() );
-                    int presentType2 = getPresenceType( item2.getJid() );
-                    int typeDelta =  presentType2 - presentType1;
+                    
+                    
+                    int presentType1 = getCachedPresence( item1.getJid() );
+                    int presentType2 = getCachedPresence( item2.getJid() );
+                    int typeDelta =  presentType1 - presentType2;
                     if ( typeDelta == 0 )
                         return item1.getName().toLowerCase().compareTo( item2.getName().toLowerCase() );
                     else
                     {
-                        if( presentType1 == PRESENCE_TYPE_AVAILABLE ) return -10;
-                        if( presentType2 == PRESENCE_TYPE_AVAILABLE ) return 10;
-                        else return typeDelta;
+                        return typeDelta;
                     }
                 }
 
