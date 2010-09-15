@@ -158,10 +158,10 @@ public abstract class TreeggerActivity extends Activity {
     
     // ------------------------------------------------------------------------------------------------
     // ------------------------------------------------------------------------------------------------
-    protected static final int PRESENCE_TYPE_UNAVAILABLE = 0;
     protected static final int PRESENCE_TYPE_AVAILABLE = 1;
     protected static final int PRESENCE_TYPE_AWAY = 2;
     protected static final int PRESENCE_TYPE_DND = 3;
+    protected static final int PRESENCE_TYPE_UNAVAILABLE = 4;
     
     protected int getPresenceType( String jid )
     {
@@ -191,8 +191,10 @@ public abstract class TreeggerActivity extends Activity {
             }
         }
         return PRESENCE_TYPE_UNAVAILABLE;
-        
     }
+    
+    
+    
     protected void updatePresenceType( String jid, ImageView bullet )
     {
         if( treeggerService != null )
