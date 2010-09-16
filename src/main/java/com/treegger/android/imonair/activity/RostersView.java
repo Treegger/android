@@ -100,8 +100,10 @@ public class RostersView
         adapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item );
         presenceSpinner.setAdapter( adapter );
 
+        // TODO: should bind the selected status with treeggerservice "currentPresence"
         presenceSpinner.setOnItemSelectedListener( new OnItemSelectedListener()
         {
+            private boolean selectionChanged = false;
             @Override
             public void onItemSelected( AdapterView<?> parent, View view, int pos, long id )
             {
@@ -111,16 +113,16 @@ public class RostersView
                     String show = "";
                     String status = "";
 
-                    String spinnerPresence = parent.getItemAtPosition( pos ).toString();
-                    if ( spinnerPresence.equalsIgnoreCase( "Do no disturb" ) )
+                    switch( pos )
                     {
-                        show = "dnd";
+                        case 1: show = "dnd";
+                            break;
+                        case 2: show = "away";
+                            break;
                     }
-                    else if ( spinnerPresence.equalsIgnoreCase( "Away" ) )
-                    {
-                        show = "away";
-                    }
-                    treeggerService.sendPresence( type, show, status );
+                    if( selectionChanged )
+                        treeggerService.sendPresence( type, show, status );
+                    else selectionChanged = true;
                 }
             }
 

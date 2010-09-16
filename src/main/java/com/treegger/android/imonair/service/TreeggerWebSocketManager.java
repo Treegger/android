@@ -332,10 +332,11 @@ public class TreeggerWebSocketManager implements WSEventHandler
         WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
         AuthenticateRequest.Builder authReq = AuthenticateRequest.newBuilder();
         String username = name.trim().toLowerCase()+"@"+ socialnetwork.trim().toLowerCase();
-        this.fromJID = username+"/"+DEFAULT_RESOURCE;
+        final String resource = DEFAULT_RESOURCE+"-"+Long.toString( System.currentTimeMillis()%(1024*16), 32 );
+        this.fromJID = username+"/"+resource;
         authReq.setUsername( username );
         authReq.setPassword( password.trim() );
-        authReq.setResource( DEFAULT_RESOURCE );
+        authReq.setResource( resource );
         if( sessionId != null ) authReq.setSessionId( sessionId );
         message.setAuthenticateRequest( authReq );
         sendWebSocketMessage( message );

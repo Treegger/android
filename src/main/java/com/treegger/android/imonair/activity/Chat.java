@@ -151,7 +151,7 @@ public class Chat
         
         VCardResponse vcard = treeggerService.vcards.get( jid );
         TextView username = (TextView) findViewById( R.id.window_username );
-        username.setText( vcard.getFn() );
+        if( vcard != null ) username.setText( vcard.getFn() );
         updatePresenceTitle();
 
         

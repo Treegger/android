@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -103,11 +104,10 @@ public class TreeggerService
                     }
                 }
                 
-                
-
             }
         }
     };
+    
     
     
     // ----------------------------------------------------------------------------
@@ -256,21 +256,58 @@ public class TreeggerService
 
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
-    private Map<String,Presence> presenceMap = Collections.synchronizedMap( new HashMap<String,Presence>() ); 
+    private Map<String,List<Presence>> presenceMap = new HashMap<String,List<Presence>>(); 
     
-    public void addPresence( Account account, Presence presence )
+    public synchronized void addPresence( Account account, Presence presence )
     {
-        String from = getUserAndHostFromJID( presence.getFrom() );
+        String userAndHost = getUserAndHostFromJID( presence.getFrom() );
+        List<Presence> presences = presenceMap.get( userAndHost );
+        if( presences == null )
+        {
+            presences = new ArrayList<Presence>();
+            presenceMap.put( userAndHost, presences );
+        }
         
+        Iterator<Presence> iter = presences.iterator();
+        while( iter.hasNext() )
+        {
+            if( iter.next().getFrom().equals( presence.getFrom() ) ) iter.remove();
+        }
+
         String presenceType = presence.getType();
-        if( presenceType != null && presenceType.equalsIgnoreCase( "unavailable" ) ) presenceMap.remove( from );
-        else presenceMap.put( from, presence );
+        if( presenceType != null && !presenceType.equalsIgnoreCase( "unavailable" ) )
+        {
+            presences.add( presence );
+        }
         broadcast( MESSAGE_TYPE_PRESENCE_UPDATE );
 
     }
-    public Presence getPresence( String jid )
+    public synchronized Presence getPresence( String jid )
     {
-        return presenceMap.get( jid );
+        List<Presence> presences = presenceMap.get( jid );
+        if( presences != null )
+        {
+            for( Presence presence : presences )
+            {
+                if( ( presence.getType() == null ||  presence.getType().length() == 0 ) 
+                    && ( presence.getShow() == null ||  presence.getShow().length() == 0 ) )
+                {
+                    return presence;
+                }
+            }
+            for( Presence presence : presences )
+            {
+                if( presence.getShow() == null ||  presence.getShow().length() > 0 )
+                {
+                    return presence;
+                }
+            }
+            for( Presence presence : presences )
+            {
+                return presence;
+            }
+        }
+        return null;
     }
     
     // ----------------------------------------------------------------------------

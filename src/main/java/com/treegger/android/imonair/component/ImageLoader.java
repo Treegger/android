@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Message;
@@ -136,7 +137,11 @@ public class ImageLoader
             URLConnection connection = url.openConnection();
             connection.setConnectTimeout( 5*1000 );
             connection.setReadTimeout( 5*1000 );
-            copy( connection.getInputStream(), new FileOutputStream( file ) );
+            File tempFile = new File( file.getParentFile(), file.getName()+".tmp" );
+            if( tempFile.exists() ) tempFile.delete();
+            copy( connection.getInputStream(), new FileOutputStream( tempFile ) );
+            if( file.exists() ) file.delete();
+            tempFile.renameTo( file );
         }
 
         private File getFile( ImageHandler handler )
@@ -191,7 +196,8 @@ public class ImageLoader
             {
 
                 WifiManager wifi = (WifiManager) handler.image.getContext().getSystemService( Context.WIFI_SERVICE );
-                if ( wifi.isWifiEnabled() )
+                WifiInfo info = wifi.getConnectionInfo();
+                if ( info != null && info.getIpAddress() != 0 )
                 {
                     cacheURLToFile( handler.url, file );
                 }
