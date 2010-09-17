@@ -59,8 +59,15 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private static final int TRANSITION_DISCONNECTED = 51;
     private static final int TRANSITION_RESUME = 6;
     
-    private static final Lock LOCK =  new ReentrantLock();
     
+    public static final int PRESENCE_AVAILABLE = 1;
+    public static final int PRESENCE_AWAY = 2;
+    public static final int PRESENCE_DND = 3;
+
+    private int currentSelectedPresence = PRESENCE_AVAILABLE;
+    
+    private static final Lock LOCK =  new ReentrantLock();
+
     private int connectionState = STATE_DISCONNECTED;
     
     public int getState()
@@ -460,7 +467,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
         if( sleeping )
         {
             sleeping = false;
-            sendPresence( "", "", "" );
+            sendCurrentSelectedPresence();
         }
     }
 
@@ -517,9 +524,36 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         authenticated = true;
         if( sleeping ) sendPresence( "", "away", "" );
-        else sendPresence( "", "", "" );
+        else sendCurrentSelectedPresence();
         flushLaterWebSocketMessageQueue();
     }
+    
+    
+    
+
+    public void setCurrentSelectedPresence( int currentSelectedPresence )
+    {
+        this.currentSelectedPresence = currentSelectedPresence;
+    }
+
+    public void sendCurrentSelectedPresence()
+    {
+        switch( currentSelectedPresence )
+        {
+            case PRESENCE_AVAILABLE:
+                sendPresence( "", "", "" );
+                break;
+                
+            case PRESENCE_AWAY:
+                sendPresence( "", "away", "" );
+                break;
+
+            case PRESENCE_DND:
+                sendPresence( "", "dnd", "" );
+                break;
+        }
+    }
+
     
     @Override
     public void onMessage( byte[] message )
