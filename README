@@ -1,4 +1,4 @@
-This repository contains AndroIM a simple Android Instant Messaging application based on WebSocket and Treegger protobuf protocol (available under BSD License).
+This repository contains IMonAIR a simple Android Instant Messaging application based on WebSocket and Treegger protobuf protocol (available under Simplified BSD License).
 
 You need to add following libs to your project:
 * websocket-client: http://github.com/Treegger/websocket-client/tree/master/java/
