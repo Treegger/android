@@ -76,9 +76,6 @@ public abstract class TreeggerActivity extends Activity {
                 removeDialog( currentDialog );
                 currentDialog = 0;
                 break;
-            
-            case TreeggerService.MESSAGE_TYPE_PAUSED:
-                break;
         }
     }
     
