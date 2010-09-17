@@ -12,6 +12,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -23,7 +25,6 @@ import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnCreateContextMenuListener;
-import android.view.View.OnKeyListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -103,12 +104,13 @@ public class Chat
 
         
         final TextView textInput = (TextView) findViewById( R.id.input_chat );
-        textInput.setOnKeyListener( new OnKeyListener()
+        textInput.addTextChangedListener( new TextWatcher()
         {
+            
             @Override
-            public boolean onKey( View v, int keyCode, KeyEvent event )
+            public void onTextChanged( CharSequence s, int start, int before, int count )
             {
-                if( textInput.getText().length() > 0 )
+                if( s.length() > 0 )
                 {
                     composingMessage();
                 }
@@ -116,7 +118,17 @@ public class Chat
                 {
                     stopComposingMessage();
                 }
-                return false;
+               
+            }
+            
+            @Override
+            public void beforeTextChanged( CharSequence s, int start, int count, int after )
+            {
+            }
+            
+            @Override
+            public void afterTextChanged( Editable s )
+            {
             }
         });
 
@@ -272,7 +284,6 @@ public class Chat
                 
                 TextView label = (TextView)adapterMenuInfo.targetView.findViewById( R.id.message );
                 
-                // ((ht|f)tp(s?)://)?(([a-z0-9]([a-z0-9]|-)*[a-z0-9]|[a-z0-9])\.)+([a-z]([a-z0-9]|-)*[a-z0-9]|[a-z])(/([a-z0-9\.!$&'\(\)*+,;=_~:@-]|%[a-f0-9]{2})*)*(\?[a-z0-9\.!$&'\(\)*+,;=_~:@/?-]*)?(\#[a-z0-9\.!$&'\(\)*+,;=_~:@/?-]*)?
                 Pattern pattern = Pattern.compile("\\b((http[s]?://|www\\.)\\S+)\\b");
                 Matcher matcher = pattern.matcher( label.getText().toString() );
                 int i = 0;
