@@ -222,25 +222,25 @@ public class TreeggerService
 
     public void addTextMessage( Account account, TextMessage textMessage )
     {
-        String from = getUserAndHostFromJID( textMessage.getFromUser() );
-        RosterItem rosterItem = findRosterItemByJID( from );
+        String fromUserAndHost = getUserAndHostFromJID( textMessage.getFromUser() );
+        RosterItem rosterItem = findRosterItemByJID( fromUserAndHost );
         if( rosterItem != null )
         {
             if( textMessage.hasBody() )
             {
-                addTextMessage( from, new ChatMessage( from, textMessage.getBody() ), false );
-                Boolean value = messageComposingMap.remove( from );
+                addTextMessage( fromUserAndHost, new ChatMessage( fromUserAndHost, textMessage.getBody() ), false );
+                Boolean value = messageComposingMap.remove( fromUserAndHost );
                 if( value != null ) broadcast( MESSAGE_TYPE_COMPOSING );
             }
             else
             {
                 if( textMessage.hasComposing() && textMessage.getComposing() )
                 {
-                    messageComposingMap.put(  from, true );
+                    messageComposingMap.put(  fromUserAndHost, true );
                 }
                 else
                 {
-                    messageComposingMap.remove( from );
+                    messageComposingMap.remove( fromUserAndHost );
                 }
                 broadcast( MESSAGE_TYPE_COMPOSING );
             }
@@ -261,6 +261,8 @@ public class TreeggerService
     public synchronized void addPresence( Account account, Presence presence )
     {
         String userAndHost = getUserAndHostFromJID( presence.getFrom() );
+        messageComposingMap.remove( userAndHost );
+        
         List<Presence> presences = presenceMap.get( userAndHost );
         if( presences == null )
         {
@@ -308,6 +310,27 @@ public class TreeggerService
             }
         }
         return null;
+    }
+    
+    private int currentSelectedPresence = TreeggerWebSocketManager.PRESENCE_AVAILABLE;
+    public void setCurrentSelectedPresence( int presence )
+    {
+        currentSelectedPresence = presence;
+        for( TreeggerWebSocketManager webSocketManager : connectionMap.values() )
+        {
+            webSocketManager.setCurrentSelectedPresence( presence );    
+        }
+    }
+    public int getCurrentSelectedPresence()
+    {
+        return currentSelectedPresence;
+    }
+    public void sendCurrentSelectedPresence()
+    {
+        for( TreeggerWebSocketManager webSocketManager : connectionMap.values() )
+        {
+            webSocketManager.sendCurrentSelectedPresence();    
+        }        
     }
     
     // ----------------------------------------------------------------------------
@@ -565,6 +588,7 @@ public class TreeggerService
     }
     public void onPaused()
     {
+        messageComposingMap.clear();
         broadcast( MESSAGE_TYPE_PAUSED );
         //handler.post( new DisplayToastRunnable( this, "Pause connection" ) );
     }
