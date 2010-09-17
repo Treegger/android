@@ -27,6 +27,7 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import com.treegger.android.imonair.R;
 import com.treegger.android.imonair.component.ImageLoader;
 import com.treegger.android.imonair.service.TreeggerService;
+import com.treegger.android.imonair.service.TreeggerWebSocketManager;
 import com.treegger.protobuf.WebSocketProto.RosterItem;
 import com.treegger.protobuf.WebSocketProto.VCardResponse;
 
@@ -35,10 +36,12 @@ public class RostersView
 {
     public static final String TAG = "RosterView";
 
+    private boolean rosterInitialized = false;
     @Override
     public void onMessageType( int messageType )
     {
-        super.onMessageType( messageType );
+        if( !rosterInitialized ) super.onMessageType( messageType );
+        
         switch ( messageType )
         {
             case TreeggerService.MESSAGE_TYPE_ROSTER_UPDATE:
@@ -79,12 +82,34 @@ public class RostersView
                 List<RosterItem> rosterItemsList = treeggerService.getAllRosterItems();
                 if( rosterItemsList != null && rosterItemsList.size() > 0 )
                 {
+                    rosterInitialized = true;
                     rosterAdapter = new RosterItemAdapter( this, R.layout.rosterline, rosterItemsList );
                     rosterAdapter.sort();
                     rosterListView.setAdapter( rosterAdapter );
                 }
             }
         }        
+    }
+    
+    private void updatePresenceSpinner()
+    {
+        if( treeggerService != null )
+        {
+            Spinner presenceSpinner = (Spinner) findViewById( R.id.presence_bar );
+            switch( treeggerService.getCurrentSelectedPresence() )
+            {
+                case TreeggerWebSocketManager.PRESENCE_AVAILABLE:
+                    presenceSpinner.setSelection( 0 );
+                    break;
+                case TreeggerWebSocketManager.PRESENCE_DND:
+                    presenceSpinner.setSelection( 1 );
+                    break;
+                case TreeggerWebSocketManager.PRESENCE_AWAY:
+                    presenceSpinner.setSelection( 2 );
+                    break;
+            }
+        }
+
     }
 
     @Override
@@ -109,20 +134,23 @@ public class RostersView
             {
                 if ( treeggerService != null )
                 {
-                    String type = "";
-                    String show = "";
-                    String status = "";
-
                     switch( pos )
                     {
-                        case 1: show = "dnd";
+                        case 0:
+                            treeggerService.setCurrentSelectedPresence( TreeggerWebSocketManager.PRESENCE_AVAILABLE );
                             break;
-                        case 2: show = "away";
+                        case 1:
+                            treeggerService.setCurrentSelectedPresence( TreeggerWebSocketManager.PRESENCE_DND );
+                            break;
+                        case 2:
+                            treeggerService.setCurrentSelectedPresence( TreeggerWebSocketManager.PRESENCE_AWAY );
                             break;
                     }
                     if( selectionChanged )
-                        treeggerService.sendPresence( type, show, status );
+                        treeggerService.sendCurrentSelectedPresence();
                     else selectionChanged = true;
+                    
+                    
                 }
             }
 
@@ -157,7 +185,8 @@ public class RostersView
     {
         super.onResume();
         updateRosters();
-        updateRosterAdapter();
+        updateRosterAdapter();        
+        updatePresenceSpinner();
     }
 
     @Override
@@ -182,6 +211,7 @@ public class RostersView
         else
         {
             updateRosters();
+            updatePresenceSpinner();
         }
     }
 
