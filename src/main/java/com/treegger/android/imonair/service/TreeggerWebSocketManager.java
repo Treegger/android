@@ -229,7 +229,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
         }
         catch ( IOException e )
         {
-            Log.v(TAG, "Connection failed");
+            Log.v(TAG, e.getMessage(), e );
         }
     }
     private void doConnected()
@@ -249,12 +249,12 @@ public class TreeggerWebSocketManager implements WSEventHandler
         try
         {
             if( wsConnector != null  ) wsConnector.close();
-            applyTransition( TRANSITION_PAUSED );
         }
         catch ( IOException e )
         {
-            Log.v(TAG, "Deactivate failed");
+            Log.v(TAG, e.getMessage(), e );
         }
+        applyTransition( TRANSITION_PAUSED );
     }
     private void doPaused()
     {
@@ -286,12 +286,12 @@ public class TreeggerWebSocketManager implements WSEventHandler
             if( timer != null ) timer.cancel();
             timer = null;
             if( wsConnector != null ) wsConnector.close();
-            applyTransition( TRANSITION_DISCONNECTED );
         }
         catch ( IOException e )
         {
-            Log.v(TAG, "Disconnection failed");
+            Log.v(TAG, e.getMessage(), e );
         }
+        applyTransition( TRANSITION_DISCONNECTED );
         
     }
     private void doDisconnected()
@@ -477,7 +477,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
         public void run() 
         {
             long now = System.currentTimeMillis();
-            if( lastActivity + PAUSE_DELAY < now && connectionState == STATE_CONNECTED )
+            if( connectionState == STATE_CONNECTED && sleeping ||
+                connectionState == STATE_CONNECTED && lastActivity + PAUSE_DELAY < now )
             {
                 sleep();
                 pause();
