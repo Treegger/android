@@ -66,11 +66,15 @@ public class AccountList
             @Override
             public void onItemClick( AdapterView<?> parent, View view, int position, long id )
             {
-                Account account = (Account)lv.getAdapter().getItem( position );
-                Intent intent = new Intent( view.getContext(), AccountForm.class );
-                intent.putExtra( AccountForm.EXTRA_ACCOUNT_ID, account.id );
-                
-                startActivity( intent );
+                // TODO: Only one account supported yet
+                if( position < 1 )
+                {
+                    Account account = (Account)lv.getAdapter().getItem( position );
+                    Intent intent = new Intent( view.getContext(), AccountForm.class );
+                    intent.putExtra( AccountForm.EXTRA_ACCOUNT_ID, account.id );
+                    
+                    startActivity( intent );
+                }
             }
 
         } );
