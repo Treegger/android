@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.treegger.android</groupId>
 	<artifactId>imonair</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.5</version>
 	<packaging>apk</packaging>
 	<name>Treegger IMonAir Android</name>
 
@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>com.treegger.websocket</groupId>
 			<artifactId>websocket-client</artifactId>
-			<version>0.5.2</version>
+			<version>0.5.3</version>
 		</dependency>
 
 
