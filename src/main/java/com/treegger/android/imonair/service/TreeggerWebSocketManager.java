@@ -323,7 +323,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
             sendPresence( "unavailable", "", "" );
             if( timer != null ) timer.cancel();
             timer = null;
-            Thread.sleep( 2000 ); // seems to need a little time to send data before closing & exit
+            Thread.sleep( 1000 ); // seems to need a little time to send data before closing & exit
             if( wsConnector != null ) wsConnector.close();
         }
         catch ( Exception e )
