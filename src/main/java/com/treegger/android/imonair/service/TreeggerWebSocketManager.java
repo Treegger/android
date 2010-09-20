@@ -40,8 +40,10 @@ public class TreeggerWebSocketManager implements WSEventHandler
     public static final String DEFAULT_RESOURCE = "AndroidIMonAir";
     
     public boolean authenticated = false;
+    public boolean signout = false;
     
     private String fromJID;
+    private String currentResource;
     
     public static final int STATE_DISCONNECTED = 0;
     public static final int STATE_CONNECTING = 1;
@@ -49,6 +51,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     public static final int STATE_PAUSED = 3;
     public static final int STATE_DISCONNECTING = 4;
     public static final int STATE_PAUSING = 5;
+    public static final int STATE_SIGNINGDOUT = 6;
     
     private static final int TRANSITION_CONNECT = 1;
     private static final int TRANSITION_CONNECTED = 2;
@@ -58,7 +61,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private static final int TRANSITION_DISCONNECT = 5;
     private static final int TRANSITION_DISCONNECTED = 51;
     private static final int TRANSITION_RESUME = 6;
-    
+    private static final int TRANSITION_SIGNOUT = 7;
     
     public static final int PRESENCE_AVAILABLE = 1;
     public static final int PRESENCE_AWAY = 2;
@@ -209,6 +212,21 @@ public class TreeggerWebSocketManager implements WSEventHandler
                         LOCK.unlock();
                     }
                     break;
+                case TRANSITION_SIGNOUT:
+                    if( !signout && ( connectionState == STATE_PAUSED || connectionState == STATE_PAUSING ) )
+                    {
+                        connectionState = STATE_CONNECTING;
+                        signout = true;
+                        LOCK.unlock();
+                        doResume();       
+                    }
+                    else
+                    {
+                        connectionState = STATE_SIGNINGDOUT;
+                        LOCK.unlock();
+                        doSignOut();                    
+                    }
+                    break;
                 default:
                    LOCK.unlock();
             }
@@ -298,6 +316,25 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         treeggerService.onDisconnected();
     }
+    private void doSignOut()
+    {
+        try
+        {
+            sendPresence( "unavailable", "", "" );
+            if( timer != null ) timer.cancel();
+            timer = null;
+            Thread.sleep( 2000 ); // seems to need a little time to send data before closing & exit
+            if( wsConnector != null ) wsConnector.close();
+        }
+        catch ( Exception e )
+        {
+            Log.v(TAG, e.getMessage(), e );
+        }
+        finally
+        {
+            treeggerService.onSignOut();
+        }
+    }
     
     
     public TreeggerWebSocketManager( TreeggerService treeggerService, Account account )
@@ -331,7 +368,10 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         applyTransition( TRANSITION_RESUME );
     }
-
+    public void signOut()
+    {
+        applyTransition( TRANSITION_SIGNOUT );
+    }
     
     
     private void authenticate( final String name, final String socialnetwork, final String password )
@@ -339,12 +379,20 @@ public class TreeggerWebSocketManager implements WSEventHandler
         WebSocketMessage.Builder message = WebSocketMessage.newBuilder();
         AuthenticateRequest.Builder authReq = AuthenticateRequest.newBuilder();
         String username = name.trim().toLowerCase()+"@"+ socialnetwork.trim().toLowerCase();
-        final String resource = DEFAULT_RESOURCE+"-"+Long.toString( System.currentTimeMillis()%(1024*16), 32 );
-        this.fromJID = username+"/"+resource;
         authReq.setUsername( username );
         authReq.setPassword( password.trim() );
-        authReq.setResource( resource );
-        if( sessionId != null ) authReq.setSessionId( sessionId );
+        
+        if( sessionId != null )
+        {
+            authReq.setSessionId( sessionId );
+        }
+        else
+        {
+            currentResource = DEFAULT_RESOURCE+"-"+Long.toString( System.currentTimeMillis()%(1024*16), 32 );
+        }
+        
+        authReq.setResource( currentResource );            
+        this.fromJID = username+"/"+currentResource;
         message.setAuthenticateRequest( authReq );
         sendWebSocketMessage( message );
     }
@@ -433,7 +481,7 @@ public class TreeggerWebSocketManager implements WSEventHandler
     {
         try
         {
-            if( connectionState == STATE_CONNECTED && wsConnector != null && !wsConnector.isClosed()  )
+            if( (connectionState == STATE_CONNECTED || connectionState == STATE_SIGNINGDOUT ) && wsConnector != null && !wsConnector.isClosed()  )
             {
                 wsConnector.send( message.build().toByteArray() );
             }
@@ -524,7 +572,8 @@ public class TreeggerWebSocketManager implements WSEventHandler
     private void postAuthentication()
     {
         authenticated = true;
-        if( sleeping ) sendPresence( "", "away", "" );
+        if( signout ) signOut();
+        else if( sleeping ) sendPresence( "", "away", "" );
         else sendCurrentSelectedPresence();
         flushLaterWebSocketMessageQueue();
     }

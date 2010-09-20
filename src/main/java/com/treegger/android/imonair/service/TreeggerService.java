@@ -98,7 +98,7 @@ public class TreeggerService
                 } 
                 else 
                 {
-                    if( isFailover || networkChanged )
+                    if( networkInfo.isConnected() && ( isFailover || networkChanged  ) )
                     {
                         reconnect();
                     }
@@ -451,11 +451,16 @@ public class TreeggerService
         }
         //connectionMap.clear();
     }
+    public void signOut()
+    {
+        for( TreeggerWebSocketManager webSocketManager : connectionMap.values() )
+        {
+            webSocketManager.signOut();
+        }        
+    }
     
     public void cleanup()
     {
-        sendPresence( "unavailable", "", "" );
-        disconnect();
         messageComposingMap.clear();
         presenceMap.clear();
         rosterMap.clear();
@@ -596,7 +601,12 @@ public class TreeggerService
     {
         broadcast( MESSAGE_TYPE_DISCONNECTED );
     }
-    
+    public void onSignOut()
+    {
+        cleanup();
+        stopSelf();
+        System.exit( 0 );
+    }
     
     public Map<String, VCardResponse> vcards = Collections.synchronizedMap( new HashMap<String, VCardResponse>() );
     public void onVCard( VCardResponse vcard )
