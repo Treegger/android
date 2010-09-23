@@ -1,6 +1,7 @@
 package com.treegger.android.imonair.component;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -19,6 +20,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -83,31 +88,47 @@ public class ImageLoader
 
         public void run()
         {
-            ImageHandler handler = urlQueue.poll();
-            while ( handler != null )
+            boolean loop = true;
+            while ( loop )
             {
-                fetch( handler );
-                handler = urlQueue.poll();
-                if( handler == null )
+                ImageHandler handler = urlQueue.poll();
+                if( handler != null )
                 {
-                    yield();
-                    handler = backgroundQueue.poll();
-                    if( handler != null )
-                        backgroundFetch( handler );
+                    fetch( handler );
+                }
+                else
+                {
+                    try
+                    {
+                        sleep( 1000 );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                    }
+                    
+                    ImageHandler backgroundHandler = backgroundQueue.poll();
+                    if( backgroundHandler != null )
+                    {
+                        backgroundFetch( backgroundHandler );
+                    }
+                    else
+                    {
+                        loop = false;
+                    }
                 }
             }
         }
 
-        private static final int IO_BUFFER_SIZE = 4 * 1024;
+        private static final int IO_BUFFER_SIZE = 1024;
+        private byte[] buffer = new byte[IO_BUFFER_SIZE];
 
-        private static void copy( InputStream in, OutputStream out )
+        private void copy( InputStream in, OutputStream out )
             throws IOException
         {
-            byte[] b = new byte[IO_BUFFER_SIZE];
             int read;
-            while ( ( read = in.read( b ) ) != -1 )
+            while ( ( read = in.read( buffer ) ) != -1 )
             {
-                out.write( b, 0, read );
+                out.write( buffer, 0, read );
             }
             
             boolean ex = false;
@@ -160,32 +181,58 @@ public class ImageLoader
             }
             return file;
         }
+        
+        private Drawable getDrawable( File file, int newWidth, int newHeight ) throws FileNotFoundException
+        {
+            Bitmap bitmap = BitmapFactory.decodeStream( new FileInputStream( file ) );
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+           
+            float scaleWidth = ((float) newWidth) / width;
+            float scaleHeight = ((float) newHeight) / height;
+           
+            Matrix matrix = new Matrix();
+            matrix.postScale(scaleWidth, scaleHeight);
+            Bitmap resizedBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
+                                
+            return new BitmapDrawable(resizedBitmap);
+            
+        }
 
         private void fetch( ImageHandler handler )
         {
-            File file = getFile( handler );
-            try
+            Drawable drawable = imageMap.get( handler.url );
+            if( drawable != null )
             {
-                if ( file.exists() )
-                {
-                    backgroundQueue.add( handler );
-                }
-                else
-                {
-                    cacheURLToFile( handler.url, file );
-                }
-
-                Drawable drawable = Drawable.createFromStream( new FileInputStream( file ), "src" );
-                imageMap.put( handler.url, drawable );
-
                 Message message = handler.obtainMessage( 1, drawable );
                 handler.sendMessage( message );
-
             }
-            catch ( Exception e )
+            else
             {
-                file.delete();
-                imageMap.remove( handler.url );
+                File file = getFile( handler );
+                try
+                {
+                    if ( file.exists() )
+                    {
+                        backgroundQueue.add( handler );
+                    }
+                    else
+                    {
+                        cacheURLToFile( handler.url, file );
+                    }
+    
+                    drawable = getDrawable( file, 48, 48 );
+                    imageMap.put( handler.url, drawable );
+    
+                    Message message = handler.obtainMessage( 1, drawable );
+                    handler.sendMessage( message );
+    
+                }
+                catch ( Exception e )
+                {
+                    file.delete();
+                    imageMap.remove( handler.url );
+                }
             }
         }
 
@@ -200,9 +247,9 @@ public class ImageLoader
                 if ( info != null && info.getIpAddress() != 0 )
                 {
                     cacheURLToFile( handler.url, file );
+                    Drawable drawable = drawable = getDrawable( file, 48, 48 );
+                    imageMap.put( handler.url, drawable );
                 }
-                Drawable drawable = Drawable.createFromStream( new FileInputStream( file ), "src" );
-                imageMap.put( handler.url, drawable );
             }
             catch ( Exception e )
             {
