@@ -17,6 +17,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Binder;
@@ -165,18 +166,25 @@ public class TreeggerService
     private Map<String,List<ChatMessage>> textMessageMap = Collections.synchronizedMap( new HashMap<String,List<ChatMessage>>() );
     private Set<String> unconsumedMessageFroms = Collections.synchronizedSet( new HashSet<String>() ); 
     
-    public List<ChatMessage> getTextMessageList( String from )
+    public List<ChatMessage> getTextMessageList( String fromUserAndHost )
     {
-        return textMessageMap.get( from );
+        return textMessageMap.get( fromUserAndHost );
     }
     
-    public boolean hasMessageFrom( String from )
+    public boolean hasMessageFrom( String fromUserAndHost )
     {
-        return unconsumedMessageFroms.contains( from );
+        return unconsumedMessageFroms.contains( fromUserAndHost );
     }
-    public void markHasReadMessageFrom( String from )
+    public void markHasReadMessageFrom( String fromUserAndHost )
     {
-        unconsumedMessageFroms.remove( from );
+        if( lastNotificationUserAndHost != null && lastNotificationUserAndHost.equalsIgnoreCase( fromUserAndHost ) )
+        {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.cancelAll();
+            lastNotificationUserAndHost = null;
+        }
+        
+        unconsumedMessageFroms.remove( fromUserAndHost );
         broadcast( MESSAGE_TYPE_ROSTER_ADAPTER_UPDATE );
     }
     
@@ -603,6 +611,8 @@ public class TreeggerService
     }
     public void onSignOut()
     {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
         cleanup();
         stopSelf();
         System.exit( 0 );
@@ -624,6 +634,7 @@ public class TreeggerService
         this.visibleChatUserAndHost = userAndHost;
     }
     
+    private String lastNotificationUserAndHost = null;
     
     private void messageNotification( ChatMessage chatMessage )
     {
@@ -638,6 +649,7 @@ public class TreeggerService
             
             Intent intent = new Intent( this, Chat.class );
             intent.addFlags( Intent.FLAG_ACTIVITY_REORDER_TO_FRONT );
+            lastNotificationUserAndHost = chatMessage.userAndHost;
             intent.putExtra( Chat.EXTRA_ROSTER_JID, chatMessage.userAndHost );
 
             PendingIntent contentIntent = PendingIntent.getActivity( this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT );
@@ -645,6 +657,11 @@ public class TreeggerService
             VCardResponse vcard = vcards.get( chatMessage.userAndHost );
             notification.setLatestEventInfo(this, vcard.getFn(), chatMessage.text, contentIntent);
             notification.defaults |= Notification.DEFAULT_SOUND;
+
+            notification.flags |= Notification.FLAG_SHOW_LIGHTS;
+            notification.ledARGB = Color.GREEN; 
+            notification.ledOffMS = 500; 
+            notification.ledOnMS = 500; 
             
             notificationManager.notify( R.string.message_notification, notification);
         }        
