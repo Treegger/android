@@ -439,6 +439,7 @@ public class TreeggerService
     @Override
     public void onDestroy()
     {
+        disconnect();
         cleanup();
         unregisterReceiver( receiver );
     }
